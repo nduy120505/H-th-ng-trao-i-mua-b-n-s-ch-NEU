@@ -15,7 +15,13 @@
   <div class="detail-layout">
 
     <div>
-      <div class="detail-cover">Sách</div>
+      <div class="detail-cover">
+        {% if listing.cover_image %}
+          <img src="{{ listing.cover_image }}" alt="{{ listing.title }}" class="detail-cover-image">
+        {% else %}
+          Sách
+        {% endif %}
+      </div>
       <h1 class="detail-title">{{ listing.title }}</h1>
       <div class="detail-author">
         {% if listing.author %}{{ listing.author }}{% endif %}
@@ -139,6 +145,16 @@
           {% endif %}
           <a href="{{ url_for('chat', lid=listing.id, oid=listing.seller_id) }}"
              class="btn btn-primary btn-block detail-message-btn">Nhắn tin người bán</a>
+          <form method="POST" action="{{ url_for('report_user', lid=listing.id) }}" style="margin-bottom:10px">
+            <select name="reason" class="form-control" style="margin-bottom:8px">
+              {% for reason in REPORT_REASONS %}
+                <option value="{{ reason }}">{{ reason }}</option>
+              {% endfor %}
+            </select>
+            <textarea name="details" class="form-control" rows="3"
+                      placeholder="Mô tả ngắn lý do bạn nghi ngờ người dùng này"></textarea>
+            <button type="submit" class="btn btn-outline btn-block" style="margin-top:10px">Report người bán</button>
+          </form>
         {% endif %}
 
         <button class="wishlist-btn btn btn-outline btn-block"
@@ -181,7 +197,13 @@
     <div class="book-grid">
       {% for r in related %}
         <a href="{{ url_for('listing_detail', lid=r.id) }}" class="card book-card">
-          <div class="book-card-cover"><span class="book-card-cover-label">Sách</span></div>
+          <div class="book-card-cover">
+            {% if r.cover_image %}
+              <img src="{{ r.cover_image }}" alt="{{ r.title }}" class="book-cover-image">
+            {% else %}
+              <span class="book-card-cover-label">Sách</span>
+            {% endif %}
+          </div>
           <div class="book-card-body">
             <div class="book-card-title">{{ r.title }}</div>
             {% if r.listing_type == 'sell' %}

@@ -1,7 +1,7 @@
-"""
+﻿"""
 database.py
 ===========
-Quản lý kết nối SQLite, định nghĩa schema và seed dữ liệu mẫu
+Quáº£n lĂ½ káº¿t ná»‘i SQLite, Ä‘á»‹nh nghÄ©a schema vĂ  seed dá»¯ liá»‡u máº«u
 cho NEU Bookstore.
 """
 
@@ -18,24 +18,24 @@ DATABASE = os.environ.get(
 )
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Kết nối
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Káº¿t ná»‘i
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def get_db_connection() -> sqlite3.Connection:
-    """Trả về kết nối SQLite với row_factory = Row."""
+    """Tráº£ vá» káº¿t ná»‘i SQLite vá»›i row_factory = Row."""
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Khởi tạo schema
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Khá»Ÿi táº¡o schema
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 SCHEMA_SQL = """
--- Bảng người dùng
+-- Báº£ng ngÆ°á»i dĂ¹ng
 CREATE TABLE IF NOT EXISTS users (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     username      TEXT    UNIQUE NOT NULL,
@@ -53,18 +53,18 @@ CREATE TABLE IF NOT EXISTS users (
     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Bảng danh mục sách (phân cấp 2 tầng)
+-- Báº£ng danh má»¥c sĂ¡ch (phĂ¢n cáº¥p 2 táº§ng)
 CREATE TABLE IF NOT EXISTS categories (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     name        TEXT    NOT NULL,
     slug        TEXT    UNIQUE NOT NULL,
     parent_id   INTEGER REFERENCES categories(id) ON DELETE SET NULL,
-    icon        TEXT    DEFAULT '📚',
+    icon        TEXT    DEFAULT 'đŸ“',
     description TEXT,
     sort_order  INTEGER DEFAULT 0
 );
 
--- Bảng thông tin sách
+-- Báº£ng thĂ´ng tin sĂ¡ch
 CREATE TABLE IF NOT EXISTS books (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     title        TEXT    NOT NULL,
@@ -78,11 +78,12 @@ CREATE TABLE IF NOT EXISTS books (
     course_year  INTEGER,
     subject_code TEXT,
     description  TEXT,
-    cover_emoji  TEXT    DEFAULT '📖',
+    cover_image  TEXT,
+    cover_emoji  TEXT    DEFAULT 'đŸ“–',
     created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Bảng tin đăng bán / trao đổi
+-- Báº£ng tin Ä‘Äƒng bĂ¡n / trao Ä‘á»•i
 CREATE TABLE IF NOT EXISTS listings (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     book_id      INTEGER REFERENCES books(id)    ON DELETE CASCADE,
@@ -103,7 +104,7 @@ CREATE TABLE IF NOT EXISTS listings (
     updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Bảng tin nhắn giữa người dùng
+-- Báº£ng tin nháº¯n giá»¯a ngÆ°á»i dĂ¹ng
 CREATE TABLE IF NOT EXISTS messages (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     listing_id  INTEGER REFERENCES listings(id)  ON DELETE CASCADE,
@@ -114,7 +115,7 @@ CREATE TABLE IF NOT EXISTS messages (
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Bảng yêu thích
+-- Báº£ng yĂªu thĂ­ch
 CREATE TABLE IF NOT EXISTS wishlist (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id    INTEGER REFERENCES users(id)    ON DELETE CASCADE,
@@ -123,7 +124,7 @@ CREATE TABLE IF NOT EXISTS wishlist (
     UNIQUE(user_id, listing_id)
 );
 
--- Bảng đánh giá người dùng
+-- Báº£ng Ä‘Ă¡nh giĂ¡ ngÆ°á»i dĂ¹ng
 CREATE TABLE IF NOT EXISTS reviews (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     reviewer_id INTEGER REFERENCES users(id)    ON DELETE CASCADE,
@@ -133,120 +134,134 @@ CREATE TABLE IF NOT EXISTS reviews (
     comment     TEXT,
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS user_reports (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    reporter_id      INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    reported_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    listing_id       INTEGER REFERENCES listings(id) ON DELETE SET NULL,
+    reason           TEXT NOT NULL,
+    details          TEXT,
+    status           TEXT DEFAULT 'pending'
+                     CHECK(status IN ('pending','reviewed','dismissed')),
+    resolved_by      INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    resolved_at      TIMESTAMP,
+    created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Dữ liệu mẫu
-# ─────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Dá»¯ liá»‡u máº«u
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 SEED_CATEGORIES = [
-    # Cấp 1
-    (1,  "Môn Học Đại Cương",           "dai-cuong",    None, "🎓", "Các môn đại cương toàn trường",           1),
-    (2,  "Khoa Kinh Tế",                "kinh-te",      None, "📊", "Sách chuyên ngành Kinh tế học",           2),
-    (3,  "Khoa Quản Trị Kinh Doanh",    "quan-tri",     None, "💼", "Sách chuyên ngành Quản trị kinh doanh",   3),
-    (4,  "Khoa Tài Chính – Ngân Hàng",  "tai-chinh",    None, "🏦", "Sách chuyên ngành Tài chính – Ngân hàng", 4),
-    (5,  "Khoa Kế Toán – Kiểm Toán",    "ke-toan",      None, "📒", "Sách chuyên ngành Kế toán",               5),
-    (6,  "Khoa Hệ Thống Thông Tin",     "httt",         None, "💻", "Sách chuyên ngành Hệ thống thông tin",    6),
-    (7,  "Khoa Marketing",              "marketing",    None, "📢", "Sách chuyên ngành Marketing",             7),
-    (8,  "Khoa Luật Kinh Tế",           "luat",         None, "⚖️", "Sách chuyên ngành Luật kinh tế",          8),
-    (9,  "Khoa Bất Động Sản",           "bat-dong-san", None, "🏠", "Sách chuyên ngành Bất động sản",          9),
-    (10, "Khoa Thống Kê",               "thong-ke",     None, "📈", "Sách chuyên ngành Thống kê",              10),
-    # Cấp 2 – con của Đại cương (parent_id=1)
-    (11, "Toán Cao Cấp & XSTK",         "toan",          1,  "🔢", "Toán cao cấp, Xác suất thống kê",         1),
-    (12, "Kinh Tế Chính Trị",           "ktct",          1,  "🏛️", "Kinh tế chính trị Mác-Lênin",              2),
-    (13, "Triết Học Mác-Lênin",         "triet-hoc",     1,  "🤔", "Triết học Mác-Lênin",                     3),
-    (14, "Pháp Luật Đại Cương",         "phap-luat",     1,  "📜", "Pháp luật đại cương",                     4),
-    (15, "Tiếng Anh",                   "tieng-anh",     1,  "🌍", "Tiếng Anh thương mại, IELTS, TOEIC",      5),
-    (16, "Tin Học Đại Cương",           "tin-hoc",       1,  "🖥️", "Tin học đại cương, Office",                6),
-    (17, "Lịch Sử Đảng",               "ls-dang",       1,  "🇻🇳", "Lịch sử Đảng Cộng sản Việt Nam",          7),
-    (18, "Tư Tưởng Hồ Chí Minh",       "tthcm",         1,  "⭐",  "Tư tưởng Hồ Chí Minh",                   8),
-    # Cấp 2 – con của Kinh tế (parent_id=2)
-    (19, "Kinh Tế Vi Mô",              "vi-mo",          2,  "🔍", "Kinh tế vi mô",                           1),
-    (20, "Kinh Tế Vĩ Mô",              "vi-mo-2",        2,  "🌐", "Kinh tế vĩ mô",                           2),
-    (21, "Kinh Tế Quốc Tế",            "kt-quoc-te",     2,  "✈️", "Kinh tế quốc tế",                         3),
-    # Cấp 2 – con của Tài chính (parent_id=4)
-    (22, "Tài Chính Doanh Nghiệp",     "tcdn",           4,  "💰", "Tài chính doanh nghiệp",                  1),
-    (23, "Ngân Hàng Thương Mại",       "nhtm",           4,  "🏧", "Nghiệp vụ ngân hàng",                     2),
-    (24, "Thị Trường Chứng Khoán",     "chung-khoan",    4,  "📉", "Chứng khoán & đầu tư",                    3),
+    # Cáº¥p 1
+    (1,  "MĂ´n Há»c Äáº¡i CÆ°Æ¡ng",           "dai-cuong",    None, "đŸ“", "CĂ¡c mĂ´n Ä‘áº¡i cÆ°Æ¡ng toĂ n trÆ°á»ng",           1),
+    (2,  "Khoa Kinh Táº¿",                "kinh-te",      None, "đŸ“", "SĂ¡ch chuyĂªn ngĂ nh Kinh táº¿ há»c",           2),
+    (3,  "Khoa Quáº£n Trá»‹ Kinh Doanh",    "quan-tri",     None, "đŸ’¼", "SĂ¡ch chuyĂªn ngĂ nh Quáº£n trá»‹ kinh doanh",   3),
+    (4,  "Khoa TĂ i ChĂ­nh â€“ NgĂ¢n HĂ ng",  "tai-chinh",    None, "đŸ¦", "SĂ¡ch chuyĂªn ngĂ nh TĂ i chĂ­nh â€“ NgĂ¢n hĂ ng", 4),
+    (5,  "Khoa Káº¿ ToĂ¡n â€“ Kiá»ƒm ToĂ¡n",    "ke-toan",      None, "đŸ“’", "SĂ¡ch chuyĂªn ngĂ nh Káº¿ toĂ¡n",               5),
+    (6,  "Khoa Há»‡ Thá»‘ng ThĂ´ng Tin",     "httt",         None, "đŸ’»", "SĂ¡ch chuyĂªn ngĂ nh Há»‡ thá»‘ng thĂ´ng tin",    6),
+    (7,  "Khoa Marketing",              "marketing",    None, "đŸ“¢", "SĂ¡ch chuyĂªn ngĂ nh Marketing",             7),
+    (8,  "Khoa Luáº­t Kinh Táº¿",           "luat",         None, "â–ï¸", "SĂ¡ch chuyĂªn ngĂ nh Luáº­t kinh táº¿",          8),
+    (9,  "Khoa Báº¥t Äá»™ng Sáº£n",           "bat-dong-san", None, "đŸ ", "SĂ¡ch chuyĂªn ngĂ nh Báº¥t Ä‘á»™ng sáº£n",          9),
+    (10, "Khoa Thá»‘ng KĂª",               "thong-ke",     None, "đŸ“ˆ", "SĂ¡ch chuyĂªn ngĂ nh Thá»‘ng kĂª",              10),
+    # Cáº¥p 2 â€“ con cá»§a Äáº¡i cÆ°Æ¡ng (parent_id=1)
+    (11, "ToĂ¡n Cao Cáº¥p & XSTK",         "toan",          1,  "đŸ”¢", "ToĂ¡n cao cáº¥p, XĂ¡c suáº¥t thá»‘ng kĂª",         1),
+    (12, "Kinh Táº¿ ChĂ­nh Trá»‹",           "ktct",          1,  "đŸ›ï¸", "Kinh táº¿ chĂ­nh trá»‹ MĂ¡c-LĂªnin",              2),
+    (13, "Triáº¿t Há»c MĂ¡c-LĂªnin",         "triet-hoc",     1,  "đŸ¤”", "Triáº¿t há»c MĂ¡c-LĂªnin",                     3),
+    (14, "PhĂ¡p Luáº­t Äáº¡i CÆ°Æ¡ng",         "phap-luat",     1,  "đŸ“œ", "PhĂ¡p luáº­t Ä‘áº¡i cÆ°Æ¡ng",                     4),
+    (15, "Tiáº¿ng Anh",                   "tieng-anh",     1,  "đŸŒ", "Tiáº¿ng Anh thÆ°Æ¡ng máº¡i, IELTS, TOEIC",      5),
+    (16, "Tin Há»c Äáº¡i CÆ°Æ¡ng",           "tin-hoc",       1,  "đŸ–¥ï¸", "Tin há»c Ä‘áº¡i cÆ°Æ¡ng, Office",                6),
+    (17, "Lá»‹ch Sá»­ Äáº£ng",               "ls-dang",       1,  "đŸ‡»đŸ‡³", "Lá»‹ch sá»­ Äáº£ng Cá»™ng sáº£n Viá»‡t Nam",          7),
+    (18, "TÆ° TÆ°á»Ÿng Há»“ ChĂ­ Minh",       "tthcm",         1,  "â­",  "TÆ° tÆ°á»Ÿng Há»“ ChĂ­ Minh",                   8),
+    # Cáº¥p 2 â€“ con cá»§a Kinh táº¿ (parent_id=2)
+    (19, "Kinh Táº¿ Vi MĂ´",              "vi-mo",          2,  "đŸ”", "Kinh táº¿ vi mĂ´",                           1),
+    (20, "Kinh Táº¿ VÄ© MĂ´",              "vi-mo-2",        2,  "đŸŒ", "Kinh táº¿ vÄ© mĂ´",                           2),
+    (21, "Kinh Táº¿ Quá»‘c Táº¿",            "kt-quoc-te",     2,  "âœˆï¸", "Kinh táº¿ quá»‘c táº¿",                         3),
+    # Cáº¥p 2 â€“ con cá»§a TĂ i chĂ­nh (parent_id=4)
+    (22, "TĂ i ChĂ­nh Doanh Nghiá»‡p",     "tcdn",           4,  "đŸ’°", "TĂ i chĂ­nh doanh nghiá»‡p",                  1),
+    (23, "NgĂ¢n HĂ ng ThÆ°Æ¡ng Máº¡i",       "nhtm",           4,  "đŸ§", "Nghiá»‡p vá»¥ ngĂ¢n hĂ ng",                     2),
+    (24, "Thá»‹ TrÆ°á»ng Chá»©ng KhoĂ¡n",     "chung-khoan",    4,  "đŸ“‰", "Chá»©ng khoĂ¡n & Ä‘áº§u tÆ°",                    3),
 ]
 
 SEED_BOOKS = [
-    ("Giáo Trình Toán Cao Cấp – Tập 1",       "Nguyễn Đình Trí",     "9786045891001", "NXB Giáo Dục",       2022, "Tái bản lần 5", 11, None,              1, "MATH101", "Đại số tuyến tính và giải tích",            "📐"),
-    ("Giáo Trình Toán Cao Cấp – Tập 2",       "Nguyễn Đình Trí",     "9786045891002", "NXB Giáo Dục",       2022, "Tái bản lần 5", 11, None,              1, "MATH102", "Tích phân và phương trình vi phân",         "📐"),
-    ("Xác Suất Thống Kê",                      "Đào Hữu Hồ",          "9786045892001", "NXB ĐHQG HN",        2021, "Lần 3",         11, None,              2, "STAT101", "Xác suất thống kê ứng dụng kinh tế",        "📊"),
-    ("Kinh Tế Chính Trị Mác-Lênin",           "Bộ GD&ĐT",            "9786045893001", "NXB Chính Trị QG",   2021, "Lần 1",         12, None,              1, "KTCT101", "Giáo trình mới 2021",                       "🏛️"),
-    ("Triết Học Mác-Lênin",                   "Bộ GD&ĐT",            "9786045893002", "NXB Chính Trị QG",   2021, "Lần 1",         13, None,              1, "TRHH101", "Giáo trình triết học chính thức",           "🤔"),
-    ("Pháp Luật Đại Cương",                   "Nguyễn Văn Động",     "9786045894001", "NXB Tư Pháp",        2020, "Lần 2",         14, None,              1, "PLDC101", "Pháp luật đại cương khối KT",               "📜"),
-    ("English for Business Communication",    "Simon Sweeney",       "9780521754491", "Cambridge UP",        2018, "3rd Edition",   15, None,              1, "ENG101",  "Tiếng Anh thương mại nâng cao",             "🌍"),
-    ("Kinh Tế Vi Mô",                         "Vũ Kim Dũng",         "9786045895001", "NXB Lao Động",        2023, "Lần 4",         19, "Khoa Kinh Tế",    1, "ECO101",  "Kinh tế vi mô cơ bản và nâng cao",         "🔍"),
-    ("Kinh Tế Vĩ Mô",                         "N. Gregory Mankiw",   "9780357722527", "Cengage Learning",    2022, "10th Edition",  20, "Khoa Kinh Tế",    2, "ECO201",  "Principles of Macroeconomics",              "🌐"),
-    ("Quản Trị Học",                          "Nguyễn Thị Liên Diệp","9786045896001", "NXB Lao Động",        2022, "Lần 6",          3, "Khoa Quản Trị",   1, "QTKD101", "Quản trị học căn bản",                     "💼"),
-    ("Marketing Căn Bản",                     "Philip Kotler",       "9780135197035", "Pearson",             2021, "16th Edition",   7, "Khoa Marketing",  2, "MKT101",  "Principles of Marketing",                  "📢"),
-    ("Tài Chính Doanh Nghiệp",                "Trần Ngọc Thơ",       "9786045897001", "NXB Thống Kê",        2022, "Lần 3",         22, "Khoa TC-NH",      2, "TCDN201", "Corporate Finance cơ bản và nâng cao",     "💰"),
-    ("Kế Toán Tài Chính",                     "Ngô Thế Chi",         "9786045898001", "NXB Tài Chính",       2023, "Lần 5",          5, "Khoa Kế Toán",    2, "KT201",   "Kế toán tài chính doanh nghiệp",           "📒"),
-    ("Cơ Sở Dữ Liệu",                         "Nguyễn Bá Tường",     "9786045899001", "NXB ĐHQG HN",         2021, "Lần 2",          6, "Khoa HTTT",       1, "IT201",   "Cơ sở dữ liệu quan hệ",                   "💻"),
-    ("Luật Kinh Tế",                           "Dương Đăng Huệ",      "9786045900001", "NXB Tư Pháp",        2022, "Lần 3",          8, "Khoa Luật",       1, "LAW201",  "Luật kinh tế dành cho sinh viên NEU",      "⚖️"),
-    ("Nguyên Lý Kế Toán",                     "Nguyễn Văn Công",     "9786045901001", "NXB Tài Chính",       2021, "Lần 4",          5, "Khoa Kế Toán",    1, "KT101",   "Nguyên lý kế toán cơ bản",                "📒"),
-    ("Thị Trường Chứng Khoán",                "Phan Thị Bích Nguyệt","9786045902001", "NXB Tài Chính",       2023, "Lần 2",         24, "Khoa TC-NH",      3, "FIN301",  "Phân tích và đầu tư chứng khoán",         "📉"),
-    ("Quản Trị Marketing",                    "Philip Kotler",       "9780135716953", "Pearson",             2022, "16th Edition",   7, "Khoa Marketing",  3, "MKT301",  "Marketing Management",                     "📢"),
+    ("GiĂ¡o TrĂ¬nh ToĂ¡n Cao Cáº¥p â€“ Táº­p 1",       "Nguyá»…n ÄĂ¬nh TrĂ­",     "9786045891001", "NXB GiĂ¡o Dá»¥c",       2022, "TĂ¡i báº£n láº§n 5", 11, None,              1, "MATH101", "Äáº¡i sá»‘ tuyáº¿n tĂ­nh vĂ  giáº£i tĂ­ch",            "đŸ“", None),
+    ("GiĂ¡o TrĂ¬nh ToĂ¡n Cao Cáº¥p â€“ Táº­p 2",       "Nguyá»…n ÄĂ¬nh TrĂ­",     "9786045891002", "NXB GiĂ¡o Dá»¥c",       2022, "TĂ¡i báº£n láº§n 5", 11, None,              1, "MATH102", "TĂ­ch phĂ¢n vĂ  phÆ°Æ¡ng trĂ¬nh vi phĂ¢n",         "đŸ“", None),
+    ("XĂ¡c Suáº¥t Thá»‘ng KĂª",                      "ÄĂ o Há»¯u Há»“",          "9786045892001", "NXB ÄHQG HN",        2021, "Láº§n 3",         11, None,              2, "STAT101", "XĂ¡c suáº¥t thá»‘ng kĂª á»©ng dá»¥ng kinh táº¿",        "đŸ“", None),
+    ("Kinh Táº¿ ChĂ­nh Trá»‹ MĂ¡c-LĂªnin",           "Bá»™ GD&ÄT",            "9786045893001", "NXB ChĂ­nh Trá»‹ QG",   2021, "Láº§n 1",         12, None,              1, "KTCT101", "GiĂ¡o trĂ¬nh má»›i 2021",                       "đŸ›ï¸", None),
+    ("Triáº¿t Há»c MĂ¡c-LĂªnin",                   "Bá»™ GD&ÄT",            "9786045893002", "NXB ChĂ­nh Trá»‹ QG",   2021, "Láº§n 1",         13, None,              1, "TRHH101", "GiĂ¡o trĂ¬nh triáº¿t há»c chĂ­nh thá»©c",           "đŸ¤”", None),
+    ("PhĂ¡p Luáº­t Äáº¡i CÆ°Æ¡ng",                   "Nguyá»…n VÄƒn Äá»™ng",     "9786045894001", "NXB TÆ° PhĂ¡p",        2020, "Láº§n 2",         14, None,              1, "PLDC101", "PhĂ¡p luáº­t Ä‘áº¡i cÆ°Æ¡ng khá»‘i KT",               "đŸ“œ", None),
+    ("English for Business Communication",    "Simon Sweeney",       "9780521754491", "Cambridge UP",        2018, "3rd Edition",   15, None,              1, "ENG101",  "Tiáº¿ng Anh thÆ°Æ¡ng máº¡i nĂ¢ng cao",             "đŸŒ", None),
+    ("Kinh Táº¿ Vi MĂ´",                         "VÅ© Kim DÅ©ng",         "9786045895001", "NXB Lao Äá»™ng",        2023, "Láº§n 4",         19, "Khoa Kinh Táº¿",    1, "ECO101",  "Kinh táº¿ vi mĂ´ cÆ¡ báº£n vĂ  nĂ¢ng cao",         "đŸ”", None),
+    ("Kinh Táº¿ VÄ© MĂ´",                         "N. Gregory Mankiw",   "9780357722527", "Cengage Learning",    2022, "10th Edition",  20, "Khoa Kinh Táº¿",    2, "ECO201",  "Principles of Macroeconomics",              "đŸŒ", None),
+    ("Quáº£n Trá»‹ Há»c",                          "Nguyá»…n Thá»‹ LiĂªn Diá»‡p","9786045896001", "NXB Lao Äá»™ng",        2022, "Láº§n 6",          3, "Khoa Quáº£n Trá»‹",   1, "QTKD101", "Quáº£n trá»‹ há»c cÄƒn báº£n",                     "đŸ’¼", None),
+    ("Marketing CÄƒn Báº£n",                     "Philip Kotler",       "9780135197035", "Pearson",             2021, "16th Edition",   7, "Khoa Marketing",  2, "MKT101",  "Principles of Marketing",                  "đŸ“¢", None),
+    ("TĂ i ChĂ­nh Doanh Nghiá»‡p",                "Tráº§n Ngá»c ThÆ¡",       "9786045897001", "NXB Thá»‘ng KĂª",        2022, "Láº§n 3",         22, "Khoa TC-NH",      2, "TCDN201", "Corporate Finance cÆ¡ báº£n vĂ  nĂ¢ng cao",     "đŸ’°", None),
+    ("Káº¿ ToĂ¡n TĂ i ChĂ­nh",                     "NgĂ´ Tháº¿ Chi",         "9786045898001", "NXB TĂ i ChĂ­nh",       2023, "Láº§n 5",          5, "Khoa Káº¿ ToĂ¡n",    2, "KT201",   "Káº¿ toĂ¡n tĂ i chĂ­nh doanh nghiá»‡p",           "đŸ“’", None),
+    ("CÆ¡ Sá»Ÿ Dá»¯ Liá»‡u",                         "Nguyá»…n BĂ¡ TÆ°á»ng",     "9786045899001", "NXB ÄHQG HN",         2021, "Láº§n 2",          6, "Khoa HTTT",       1, "IT201",   "CÆ¡ sá»Ÿ dá»¯ liá»‡u quan há»‡",                   "đŸ’»", None),
+    ("Luáº­t Kinh Táº¿",                           "DÆ°Æ¡ng ÄÄƒng Huá»‡",      "9786045900001", "NXB TÆ° PhĂ¡p",        2022, "Láº§n 3",          8, "Khoa Luáº­t",       1, "LAW201",  "Luáº­t kinh táº¿ dĂ nh cho sinh viĂªn NEU",      "â–ï¸", None),
+    ("NguyĂªn LĂ½ Káº¿ ToĂ¡n",                     "Nguyá»…n VÄƒn CĂ´ng",     "9786045901001", "NXB TĂ i ChĂ­nh",       2021, "Láº§n 4",          5, "Khoa Káº¿ ToĂ¡n",    1, "KT101",   "NguyĂªn lĂ½ káº¿ toĂ¡n cÆ¡ báº£n",                "đŸ“’", None),
+    ("Thá»‹ TrÆ°á»ng Chá»©ng KhoĂ¡n",                "Phan Thá»‹ BĂ­ch Nguyá»‡t","9786045902001", "NXB TĂ i ChĂ­nh",       2023, "Láº§n 2",         24, "Khoa TC-NH",      3, "FIN301",  "PhĂ¢n tĂ­ch vĂ  Ä‘áº§u tÆ° chá»©ng khoĂ¡n",         "đŸ“‰", None),
+    ("Quáº£n Trá»‹ Marketing",                    "Philip Kotler",       "9780135716953", "Pearson",             2022, "16th Edition",   7, "Khoa Marketing",  3, "MKT301",  "Marketing Management",                     "đŸ“¢", None),
 ]
 
 SEED_USERS = [
-    ("sv001", "123456", "Nguyễn Văn An",    "an.nv@st.neu.edu.vn",    "0912345678", "SV2021001", "Khoa Kinh Tế",              2021),
-    ("sv002", "123456", "Trần Thị Bình",    "binh.tt@st.neu.edu.vn",  "0923456789", "SV2022002", "Khoa Quản Trị Kinh Doanh",  2022),
-    ("sv003", "123456", "Lê Quang Cường",   "cuong.lq@st.neu.edu.vn", "0934567890", "SV2020003", "Khoa Tài Chính – Ngân Hàng",2020),
+    ("sv001", "123456", "Nguyá»…n VÄƒn An",    "an.nv@st.neu.edu.vn",    "0912345678", "SV2021001", "Khoa Kinh Táº¿",              2021),
+    ("sv002", "123456", "Tráº§n Thá»‹ BĂ¬nh",    "binh.tt@st.neu.edu.vn",  "0923456789", "SV2022002", "Khoa Quáº£n Trá»‹ Kinh Doanh",  2022),
+    ("sv003", "123456", "LĂª Quang CÆ°á»ng",   "cuong.lq@st.neu.edu.vn", "0934567890", "SV2020003", "Khoa TĂ i ChĂ­nh â€“ NgĂ¢n HĂ ng",2020),
 ]
 
 # (book_id, user_idx 0/1/2, type, price, condition, notes, exchange_for, views)
 SEED_LISTINGS = [
-    (1,  0, "sell",     45000,  "like_new", "Còn mới 95%, không ghi chú",               None,                  12),
-    (2,  0, "sell",     35000,  "good",     "Có gạch chân một số chỗ",                  None,                  8),
-    (3,  1, "exchange", 0,      "like_new", "Đổi lấy sách Kinh tế vi mô",               "Kinh Tế Vi Mô",       5),
-    (4,  1, "sell",     120000, "new",      "Mới 100%, còn seal",                       None,                  20),
-    (5,  2, "free",     0,      "fair",     "Tặng miễn phí, tự đến lấy",               None,                  3),
-    (6,  2, "sell",     80000,  "good",     "Sách bản tiếng Anh chính hãng",            None,                  15),
-    (7,  0, "sell",     55000,  "like_new", "Học xong không dùng nữa",                  None,                  7),
-    (8,  1, "sell",     40000,  "good",     "Có highlight các phần quan trọng",         None,                  9),
-    (9,  2, "exchange", 0,      "like_new", "Đổi lấy sách kế toán năm 2",              "Kế Toán Tài Chính",   4),
-    (10, 0, "sell",     150000, "new",      "Mua nhầm không dùng, bán rẻ",             None,                  18),
+    (1,  0, "sell",     45000,  "like_new", "CĂ²n má»›i 95%, khĂ´ng ghi chĂº",               None,                  12),
+    (2,  0, "sell",     35000,  "good",     "CĂ³ gáº¡ch chĂ¢n má»™t sá»‘ chá»—",                  None,                  8),
+    (3,  1, "exchange", 0,      "like_new", "Äá»•i láº¥y sĂ¡ch Kinh táº¿ vi mĂ´",               "Kinh Táº¿ Vi MĂ´",       5),
+    (4,  1, "sell",     120000, "new",      "Má»›i 100%, cĂ²n seal",                       None,                  20),
+    (5,  2, "free",     0,      "fair",     "Táº·ng miá»…n phĂ­, tá»± Ä‘áº¿n láº¥y",               None,                  3),
+    (6,  2, "sell",     80000,  "good",     "SĂ¡ch báº£n tiáº¿ng Anh chĂ­nh hĂ£ng",            None,                  15),
+    (7,  0, "sell",     55000,  "like_new", "Há»c xong khĂ´ng dĂ¹ng ná»¯a",                  None,                  7),
+    (8,  1, "sell",     40000,  "good",     "CĂ³ highlight cĂ¡c pháº§n quan trá»ng",         None,                  9),
+    (9,  2, "exchange", 0,      "like_new", "Äá»•i láº¥y sĂ¡ch káº¿ toĂ¡n nÄƒm 2",              "Káº¿ ToĂ¡n TĂ i ChĂ­nh",   4),
+    (10, 0, "sell",     150000, "new",      "Mua nháº§m khĂ´ng dĂ¹ng, bĂ¡n ráº»",             None,                  18),
 ]
 
 
 def init_db() -> None:
-    """Tạo bảng và seed dữ liệu mẫu nếu chưa tồn tại."""
+    """Táº¡o báº£ng vĂ  seed dá»¯ liá»‡u máº«u náº¿u chÆ°a tá»“n táº¡i."""
     conn = get_db_connection()
     cur  = conn.cursor()
 
-    # Tạo bảng
+    # Táº¡o báº£ng
     cur.executescript(SCHEMA_SQL)
     ensure_db_schema(conn)
 
-    # Seed danh mục
+    # Seed danh má»¥c
     cur.executemany(
         "INSERT OR IGNORE INTO categories "
         "(id,name,slug,parent_id,icon,description,sort_order) VALUES (?,?,?,?,?,?,?)",
         SEED_CATEGORIES,
     )
 
-    # Seed sách
+    # Seed sĂ¡ch
     cur.executemany(
         "INSERT OR IGNORE INTO books "
         "(title,author,isbn,publisher,publish_year,edition,"
-        " category_id,faculty,course_year,subject_code,description,cover_emoji) "
-        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+        " category_id,faculty,course_year,subject_code,description,cover_emoji,cover_image) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
         SEED_BOOKS,
     )
 
-    # Tài khoản admin
+    # TĂ i khoáº£n admin
     cur.execute(
         "INSERT OR IGNORE INTO users (username,password_hash,full_name,email,role) "
         "VALUES (?,?,?,?,?)",
         ("admin", generate_password_hash("admin123"),
-         "Quản trị viên NEU", "admin@neu.edu.vn", "admin"),
+         "Quáº£n trá»‹ viĂªn NEU", "admin@neu.edu.vn", "admin"),
     )
 
-    # Tài khoản sinh viên demo
+    # TĂ i khoáº£n sinh viĂªn demo
     for uname, pwd, fname, email, phone, sid, faculty, year in SEED_USERS:
         cur.execute(
             "INSERT OR IGNORE INTO users "
@@ -255,7 +270,7 @@ def init_db() -> None:
             (uname, generate_password_hash(pwd), fname, email, phone, sid, faculty, year, "student"),
         )
 
-    # Tin đăng mẫu
+    # Tin Ä‘Äƒng máº«u
     user_ids = [
         cur.execute("SELECT id FROM users WHERE username=?", (u[0],)).fetchone()[0]
         for u in SEED_USERS
@@ -270,17 +285,39 @@ def init_db() -> None:
 
     conn.commit()
     conn.close()
-    print("✅ Database khởi tạo thành công!")
+    print("âœ… Database khá»Ÿi táº¡o thĂ nh cĂ´ng!")
 
 
 def ensure_db_schema(conn: sqlite3.Connection | None = None) -> None:
-    """Bá»• sung schema cho database Ä‘ang tá»“n táº¡i."""
+    """BĂ¡Â»â€¢ sung schema cho database Ă„â€˜ang tĂ¡Â»â€œn tĂ¡ÂºÂ¡i."""
     close_conn = False
     if conn is None:
         conn = get_db_connection()
         close_conn = True
 
     cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS user_reports (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            reporter_id      INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            reported_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            listing_id       INTEGER REFERENCES listings(id) ON DELETE SET NULL,
+            reason           TEXT NOT NULL,
+            details          TEXT,
+            status           TEXT DEFAULT 'pending'
+                             CHECK(status IN ('pending','reviewed','dismissed')),
+            resolved_by      INTEGER REFERENCES users(id) ON DELETE SET NULL,
+            resolved_at      TIMESTAMP,
+            created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    book_cols = {
+        row["name"] for row in cur.execute("PRAGMA table_info(books)").fetchall()
+    }
+    if "cover_image" not in book_cols:
+        cur.execute("ALTER TABLE books ADD COLUMN cover_image TEXT")
+
     listing_cols = {
         row["name"] for row in cur.execute("PRAGMA table_info(listings)").fetchall()
     }
@@ -342,3 +379,4 @@ def ensure_db_schema(conn: sqlite3.Connection | None = None) -> None:
 
 if __name__ == "__main__":
     init_db()
+

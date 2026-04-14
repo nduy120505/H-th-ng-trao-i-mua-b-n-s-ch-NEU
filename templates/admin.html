@@ -37,6 +37,10 @@
       <div class="stat-value">{{ stats.total_messages }}</div>
       <div class="stat-label">Tổng tin nhắn</div>
     </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ stats.pending_reports }}</div>
+      <div class="stat-label">Report chờ xử lý</div>
+    </div>
   </div>
 
   <div class="panel" style="margin-bottom:24px">
@@ -49,6 +53,7 @@
           <div class="report-row"><span>Đang chờ duyệt</span><strong>{{ stats.pending_listings }}</strong></div>
           <div class="report-row"><span>Bị từ chối</span><strong>{{ stats.rejected_listings }}</strong></div>
           <div class="report-row"><span>Tổng tin đăng</span><strong>{{ stats.total_listings }}</strong></div>
+          <div class="report-row"><span>Tổng report</span><strong>{{ stats.total_reports }}</strong></div>
         </div>
       </div>
       <div class="report-card">
@@ -173,6 +178,66 @@
     </div>
 
     <div class="admin-stack">
+      <div class="panel">
+        <div class="panel-title">Report người dùng</div>
+        {% if pending_reports %}
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Người bị report</th>
+                  <th>Người gửi</th>
+                  <th>Lý do</th>
+                  <th>Tin đăng</th>
+                  <th>Xử lý</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in pending_reports %}
+                  <tr>
+                    <td>
+                      <div style="font-weight:600">{{ r.target_name or r.target_username }}</div>
+                      <div style="font-size:.74rem;color:var(--gray-500)">@{{ r.target_username }}</div>
+                    </td>
+                    <td style="font-size:.82rem">
+                      {{ r.reporter_name or r.reporter_username }}
+                      <div style="font-size:.74rem;color:var(--gray-500)">@{{ r.reporter_username }}</div>
+                    </td>
+                    <td>
+                      <div style="font-size:.82rem;font-weight:600">{{ r.reason }}</div>
+                      {% if r.details %}
+                        <div style="font-size:.74rem;color:var(--gray-500);margin-top:3px">{{ r.details }}</div>
+                      {% endif %}
+                    </td>
+                    <td style="font-size:.82rem">
+                      {% if r.listing_id %}
+                        <a href="{{ url_for('listing_detail', lid=r.listing_id) }}">{{ r.listing_title or ('Tin #' ~ r.listing_id) }}</a>
+                      {% else %}
+                        —
+                      {% endif %}
+                    </td>
+                    <td>
+                      <div class="moderation-actions">
+                        <form method="POST" action="{{ url_for('review_report', rid=r.id) }}">
+                          <button type="submit" class="btn btn-primary btn-sm">Đã xem</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('dismiss_report', rid=r.id) }}">
+                          <button type="submit" class="btn btn-outline btn-sm">Bỏ qua</button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty-state" style="padding:30px 20px">
+            <h3>Không có report nào đang chờ</h3>
+          </div>
+        {% endif %}
+      </div>
+
       <div class="panel">
         <div class="panel-title">Người dùng mới nhất</div>
         <div class="table-wrap">

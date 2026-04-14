@@ -157,7 +157,11 @@
                   <tr>
                     <td>
                       <div style="display:flex;align-items:center;gap:10px">
-                        <span class="book-card-cover-label">Sách</span>
+                        {% if l.cover_image %}
+                          <img src="{{ l.cover_image }}" alt="{{ l.title }}" class="table-book-cover">
+                        {% else %}
+                          <span class="book-card-cover-label">Sách</span>
+                        {% endif %}
                         <div>
                           <div style="font-weight:600;font-size:.88rem">{{ l.title }}</div>
                           <div style="font-size:.75rem;color:var(--gray-500)">
@@ -197,8 +201,6 @@
                     </td>
                     <td>
                       <div style="display:flex;gap:6px">
-                        <a href="{{ url_for('listing_detail', lid=l.id) }}"
-                           class="btn btn-ghost btn-sm">Xem</a>
                         {% if l.status in ('active', 'pending', 'rejected', 'sold', 'reserved', 'closed') or current_user.role == 'admin' %}
                           <a href="{{ url_for('listing_detail', lid=l.id) }}"
                              class="btn btn-ghost btn-sm">Xem</a>
@@ -219,6 +221,14 @@
                           <button type="submit" class="btn btn-danger btn-sm">Xóa</button>
                         </form>
                       </div>
+                      <form method="POST" action="{{ url_for('update_listing_cover_image', lid=l.id) }}"
+                            style="margin-top:8px;display:flex;gap:8px;align-items:center">
+                        <input type="url" name="cover_image" class="form-control"
+                               value="{{ l.cover_image or '' }}"
+                               placeholder="URL ảnh bìa sách"
+                               style="min-width:220px">
+                        <button type="submit" class="btn btn-outline btn-sm">Lưu ảnh</button>
+                      </form>
                     </td>
                   </tr>
                 {% endfor %}
@@ -238,7 +248,13 @@
           <div class="book-grid">
             {% for l in wishlist %}
               <a href="{{ url_for('listing_detail', lid=l.id) }}" class="card book-card">
-                <div class="book-card-cover"><span class="book-card-cover-label">Sách</span></div>
+                <div class="book-card-cover">
+                  {% if l.cover_image %}
+                    <img src="{{ l.cover_image }}" alt="{{ l.title }}" class="book-cover-image">
+                  {% else %}
+                    <span class="book-card-cover-label">Sách</span>
+                  {% endif %}
+                </div>
                 <div class="book-card-body">
                   <div class="book-card-title">{{ l.title }}</div>
                   <div style="font-size:.75rem;color:var(--gray-500)">

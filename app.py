@@ -60,6 +60,14 @@ TYPE_LABELS = {
     "free":     ("Miễn phí", ""),
 }
 
+REPORT_REASONS = [
+    "Nghi ngờ lừa đảo",
+    "Không giao sách sau khi nhận tiền",
+    "Thông tin sách sai sự thật",
+    "Spam / quấy rối",
+    "Khác",
+]
+
 LISTING_STATUS_META = {
     "pending": ("Chờ duyệt", "badge-warning"),
     "active": ("Đang hiển thị", "badge-green"),
@@ -160,6 +168,7 @@ def inject_globals():
         unread_count=unread,
         CONDITION_LABELS=CONDITION_LABELS,
         TYPE_LABELS=TYPE_LABELS,
+        REPORT_REASONS=REPORT_REASONS,
         LISTING_STATUS_META=LISTING_STATUS_META,
         format_local_timestamp=format_local_timestamp,
     )
@@ -270,7 +279,7 @@ def logout():
 def home():
     conn = get_db_connection()
     recent = conn.execute("""
-        SELECT l.*, b.title, b.author, b.cover_emoji, b.subject_code,
+        SELECT l.*, b.title, b.author, b.cover_emoji, b.cover_image, b.subject_code,
                u.full_name seller_name, u.username seller_username, u.rating_avg,
                c.name cat_name
         FROM listings l
@@ -283,7 +292,7 @@ def home():
     """).fetchall()
 
     popular = conn.execute("""
-        SELECT l.*, b.title, b.author, b.cover_emoji,
+        SELECT l.*, b.title, b.author, b.cover_emoji, b.cover_image,
                u.full_name seller_name, u.username seller_username
         FROM listings l
         JOIN books b ON b.id = l.book_id
@@ -374,7 +383,7 @@ def listings():
 
     rows = conn.execute(
         f"""
-        SELECT l.*, b.title, b.author, b.cover_emoji, b.subject_code,
+        SELECT l.*, b.title, b.author, b.cover_emoji, b.cover_image, b.subject_code,
                b.faculty book_faculty, b.course_year book_year,
                u.full_name seller_name, u.username seller_username, u.rating_avg,
                c.name cat_name, c.icon cat_icon
@@ -425,7 +434,7 @@ def listing_detail(lid):
     conn = get_db_connection()
     listing = conn.execute("""
         SELECT l.*, b.title, b.author, b.isbn, b.publisher, b.publish_year,
-               b.edition, b.description book_desc, b.cover_emoji,
+               b.edition, b.description book_desc, b.cover_emoji, b.cover_image,
                b.subject_code, b.faculty book_faculty, b.course_year book_year,
                u.full_name seller_name, u.username seller_username,
                u.phone seller_phone, u.email seller_email,
@@ -453,7 +462,7 @@ def listing_detail(lid):
         conn.commit()
 
     related = conn.execute("""
-        SELECT l.*, b.title, b.cover_emoji, u.full_name seller_name
+        SELECT l.*, b.title, b.cover_emoji, b.cover_image, u.full_name seller_name
         FROM listings l
         JOIN books b ON b.id = l.book_id
         JOIN users u ON u.id = l.seller_id
@@ -518,14 +527,15 @@ def post_listing():
         if not errors:
             if not book_id and new_title:
                 cur = conn.execute(
-                    "INSERT INTO books(title,author,category_id,subject_code,course_year) "
-                    "VALUES (?,?,?,?,?)",
+                    "INSERT INTO books(title,author,category_id,subject_code,course_year,cover_image) "
+                    "VALUES (?,?,?,?,?,?)",
                     (
                         new_title,
                         new_author or None,
                         int(new_cat_id) if new_cat_id.isdigit() else None,
                         new_subject or None,
                         int(new_year) if new_year.isdigit() else None,
+                        request.form.get("new_cover_image", "").strip() or None,
                     ),
                 )
                 conn.commit()
@@ -647,7 +657,7 @@ def chat(lid, oid):
     """, (lid, uid, oid, oid, uid)).fetchall()
 
     listing    = conn.execute(
-        "SELECT l.*, b.title, b.cover_emoji FROM listings l JOIN books b ON b.id=l.book_id WHERE l.id=?",
+        "SELECT l.*, b.title, b.cover_emoji, b.cover_image FROM listings l JOIN books b ON b.id=l.book_id WHERE l.id=?",
         (lid,),
     ).fetchone()
     other_user = conn.execute("SELECT * FROM users WHERE id=?", (oid,)).fetchone()
@@ -761,12 +771,12 @@ def profile():
             return redirect(url_for("profile"))
 
     my_listings = conn.execute(
-        "SELECT l.*, b.title, b.cover_emoji FROM listings l "
+        "SELECT l.*, b.title, b.cover_emoji, b.cover_image FROM listings l "
         "JOIN books b ON b.id=l.book_id WHERE l.seller_id=? ORDER BY l.created_at DESC",
         (session["user_id"],),
     ).fetchall()
     wishlist = conn.execute(
-        "SELECT l.*, b.title, b.cover_emoji, u.full_name seller_name "
+        "SELECT l.*, b.title, b.cover_emoji, b.cover_image, u.full_name seller_name "
         "FROM wishlist w "
         "JOIN listings l ON l.id=w.listing_id "
         "JOIN books b ON b.id=l.book_id "
@@ -817,6 +827,83 @@ def delete_listing(lid):
 # ─────────────────────────────────────────────────────────────────────────────
 # Admin
 # ─────────────────────────────────────────────────────────────────────────────
+
+@app.route("/listing/<int:lid>/cover-image", methods=["POST"])
+@login_required
+def update_listing_cover_image(lid):
+    cover_image = request.form.get("cover_image", "").strip() or None
+    conn = get_db_connection()
+    listing = conn.execute(
+        "SELECT id, seller_id, book_id FROM listings WHERE id=?",
+        (lid,),
+    ).fetchone()
+    if not listing:
+        conn.close()
+        flash("Khong tim thay tin dang.", "warning")
+        return redirect(url_for("profile"))
+    if listing["seller_id"] != session["user_id"] and session.get("role") != "admin":
+        conn.close()
+        flash("Ban khong co quyen cap nhat anh bia cho tin nay.", "danger")
+        return redirect(url_for("profile"))
+
+    conn.execute(
+        "UPDATE books SET cover_image=? WHERE id=?",
+        (cover_image, listing["book_id"]),
+    )
+    conn.commit()
+    conn.close()
+    flash("Da cap nhat anh bia sach.", "success")
+    return redirect(url_for("profile") + "#my-listings")
+
+
+@app.route("/listing/<int:lid>/report", methods=["POST"])
+@login_required
+def report_user(lid):
+    conn = get_db_connection()
+    listing = conn.execute(
+        "SELECT id, seller_id FROM listings WHERE id=?",
+        (lid,),
+    ).fetchone()
+    if not listing:
+        conn.close()
+        flash("Khong tim thay tin dang de report.", "warning")
+        return redirect(url_for("listings"))
+    if listing["seller_id"] == session["user_id"]:
+        conn.close()
+        flash("Ban khong the tu report chinh minh.", "warning")
+        return redirect(url_for("listing_detail", lid=lid))
+
+    reason = request.form.get("reason", "").strip()
+    details = request.form.get("details", "").strip()
+    if reason not in REPORT_REASONS:
+        conn.close()
+        flash("Ly do report khong hop le.", "warning")
+        return redirect(url_for("listing_detail", lid=lid))
+
+    duplicate = conn.execute(
+        """
+        SELECT id FROM user_reports
+        WHERE reporter_id=? AND reported_user_id=? AND listing_id=? AND status='pending'
+        """,
+        (session["user_id"], listing["seller_id"], lid),
+    ).fetchone()
+    if duplicate:
+        conn.close()
+        flash("Ban da gui report cho tin dang nay roi.", "info")
+        return redirect(url_for("listing_detail", lid=lid))
+
+    conn.execute(
+        """
+        INSERT INTO user_reports(reporter_id, reported_user_id, listing_id, reason, details)
+        VALUES (?,?,?,?,?)
+        """,
+        (session["user_id"], listing["seller_id"], lid, reason, details or None),
+    )
+    conn.commit()
+    conn.close()
+    flash("Da gui report toi admin.", "success")
+    return redirect(url_for("listing_detail", lid=lid))
+
 
 @app.route("/admin/listings/<int:lid>/approve", methods=["POST"])
 @login_required
@@ -871,6 +958,50 @@ def reject_listing(lid):
     return redirect(url_for("admin"))
 
 
+@app.route("/admin/reports/<int:rid>/review", methods=["POST"])
+@login_required
+@admin_required
+def review_report(rid):
+    conn = get_db_connection()
+    updated = conn.execute(
+        """
+        UPDATE user_reports
+        SET status='reviewed', resolved_by=?, resolved_at=CURRENT_TIMESTAMP
+        WHERE id=? AND status='pending'
+        """,
+        (session["user_id"], rid),
+    ).rowcount
+    conn.commit()
+    conn.close()
+    flash(
+        "ÄĂ£ Ä‘Ă¡nh dáº¥u report lĂ  Ä‘Ă£ xem xĂ©t." if updated else "KhĂ´ng thá»ƒ cáº­p nháº­t report nĂ y.",
+        "success" if updated else "warning",
+    )
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/reports/<int:rid>/dismiss", methods=["POST"])
+@login_required
+@admin_required
+def dismiss_report(rid):
+    conn = get_db_connection()
+    updated = conn.execute(
+        """
+        UPDATE user_reports
+        SET status='dismissed', resolved_by=?, resolved_at=CURRENT_TIMESTAMP
+        WHERE id=? AND status='pending'
+        """,
+        (session["user_id"], rid),
+    ).rowcount
+    conn.commit()
+    conn.close()
+    flash(
+        "ÄĂ£ bá» qua report." if updated else "KhĂ´ng thá»ƒ cáº­p nháº­t report nĂ y.",
+        "info" if updated else "warning",
+    )
+    return redirect(url_for("admin"))
+
+
 @app.route("/admin")
 @login_required
 @admin_required
@@ -884,6 +1015,8 @@ def admin():
           (SELECT COUNT(*) FROM listings WHERE status='active')      active_listings,
           (SELECT COUNT(*) FROM listings WHERE status='pending')     pending_listings,
           (SELECT COUNT(*) FROM listings WHERE status='rejected')    rejected_listings,
+          (SELECT COUNT(*) FROM user_reports WHERE status='pending') pending_reports,
+          (SELECT COUNT(*) FROM user_reports)                        total_reports,
           (SELECT COUNT(*) FROM messages)                            total_messages,
           (SELECT COUNT(*) FROM listings
              WHERE moderated_at >= date('now'))                      moderated_today
@@ -901,7 +1034,7 @@ def admin():
         LIMIT 20
     """).fetchall()
     recent_listings = conn.execute("""
-        SELECT l.*, b.title, u.username seller, u.full_name seller_name
+        SELECT l.*, b.title, b.cover_image, u.username seller, u.full_name seller_name
         FROM listings l
         JOIN books b ON b.id=l.book_id
         JOIN users u ON u.id=l.seller_id
@@ -942,6 +1075,19 @@ def admin():
         ORDER BY COALESCE(l.moderated_at, l.updated_at) DESC
         LIMIT 12
     """).fetchall()
+    pending_reports = conn.execute("""
+        SELECT r.*, reporter.username reporter_username, reporter.full_name reporter_name,
+               target.username target_username, target.full_name target_name,
+               l.id listing_id, b.title listing_title
+        FROM user_reports r
+        JOIN users reporter ON reporter.id=r.reporter_id
+        JOIN users target   ON target.id=r.reported_user_id
+        LEFT JOIN listings l ON l.id=r.listing_id
+        LEFT JOIN books b ON b.id=l.book_id
+        WHERE r.status='pending'
+        ORDER BY r.created_at ASC
+        LIMIT 20
+    """).fetchall()
     conn.close()
     return render_template(
         "admin.html",
@@ -953,6 +1099,7 @@ def admin():
         faculty_report=faculty_report,
         top_sellers=top_sellers,
         moderation_report=moderation_report,
+        pending_reports=pending_reports,
     )
 
 

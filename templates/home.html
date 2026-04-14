@@ -36,7 +36,11 @@
       {% for l in recent %}
         <a href="{{ url_for('listing_detail', lid=l.id) }}" class="card book-card">
           <div class="book-card-cover">
-            <span class="book-card-cover-label">Sách</span>
+            {% if l.cover_image %}
+              <img src="{{ l.cover_image }}" alt="{{ l.title }}" class="book-cover-image">
+            {% else %}
+              <span class="book-card-cover-label">Sách</span>
+            {% endif %}
             <button class="wishlist-btn {{ 'wishlisted' if l.id in wishlist_ids }}"
                     data-lid="{{ l.id }}"
                     title="{{ 'Bỏ yêu thích' if l.id in wishlist_ids else 'Thêm yêu thích' }}">
@@ -81,7 +85,11 @@
       {% for l in popular %}
         <a href="{{ url_for('listing_detail', lid=l.id) }}" class="card book-card">
           <div class="book-card-cover">
-            <span class="book-card-cover-label">Sách</span>
+            {% if l.cover_image %}
+              <img src="{{ l.cover_image }}" alt="{{ l.title }}" class="book-cover-image">
+            {% else %}
+              <span class="book-card-cover-label">Sách</span>
+            {% endif %}
             <button class="wishlist-btn {{ 'wishlisted' if l.id in wishlist_ids }}" data-lid="{{ l.id }}">
               {{ 'Đã lưu' if l.id in wishlist_ids else 'Lưu' }}
             </button>
