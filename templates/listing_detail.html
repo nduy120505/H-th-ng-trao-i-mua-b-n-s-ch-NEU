@@ -5,9 +5,9 @@
 <div class="container">
 
   <div class="breadcrumb">
-    <a href="{{ url_for('home') }}">Trang chủ</a>
+    <a href="{{ url_for('home') }}">Trang chá»§</a>
     <span class="breadcrumb-sep">›</span>
-    <a href="{{ url_for('listings') }}">Sách</a>
+    <a href="{{ url_for('listings') }}">SĂ¡ch</a>
     <span class="breadcrumb-sep">›</span>
     <span>{{ listing.title }}</span>
   </div>
@@ -19,7 +19,7 @@
         {% if listing.cover_image %}
           <img src="{{ listing.cover_image }}" alt="{{ listing.title }}" class="detail-cover-image">
         {% else %}
-          Sách
+          SĂ¡ch
         {% endif %}
       </div>
       <h1 class="detail-title">{{ listing.title }}</h1>
@@ -50,9 +50,9 @@
       </div>
 
       {% if listing.listing_type == 'sell' %}
-        <div class="detail-price">{{ '{:,.0f}'.format(listing.price) }}đ</div>
+        <div class="detail-price">{{ '{:,.0f}'.format(listing.price) }}Ä'</div>
       {% elif listing.listing_type == 'free' %}
-        <div class="detail-price-free">Miễn phí</div>
+        <div class="detail-price-free">Miá»…n phĂ­</div>
       {% else %}
         <div class="detail-price book-card-exchange">Trao đổi</div>
         {% if listing.exchange_for %}
@@ -61,10 +61,10 @@
       {% endif %}
 
       <div class="detail-info">
-        <div class="detail-section-label">Thông tin sách</div>
+        <div class="detail-section-label">ThĂ´ng tin sĂ¡ch</div>
         {% if listing.subject_code %}
           <div class="detail-info-row">
-            <span class="detail-info-label">Mã môn học</span>
+            <span class="detail-info-label">MĂ£ mĂ´n học</span>
             <span class="detail-info-value">{{ listing.subject_code }}</span>
           </div>
         {% endif %}
@@ -76,7 +76,7 @@
         {% endif %}
         {% if listing.edition %}
           <div class="detail-info-row">
-            <span class="detail-info-label">Phiên bản</span>
+            <span class="detail-info-label">PhiĂªn bản</span>
             <span class="detail-info-value">{{ listing.edition }}</span>
           </div>
         {% endif %}
@@ -88,26 +88,26 @@
         {% endif %}
         {% if listing.book_year %}
           <div class="detail-info-row">
-            <span class="detail-info-label">Dành cho năm</span>
-            <span class="detail-info-value">Năm {{ listing.book_year }}</span>
+            <span class="detail-info-label">DĂ nh cho năm</span>
+            <span class="detail-info-value">{{ format_book_years(listing.book_year) }}</span>
           </div>
         {% endif %}
         <div class="detail-info-row">
-          <span class="detail-info-label">Ngày đăng</span>
+          <span class="detail-info-label">NgĂ y đăng</span>
           <span class="detail-info-value">{{ listing.created_at[:10] }}</span>
         </div>
       </div>
 
       {% if listing.notes %}
         <div class="panel">
-          <div class="panel-title">Ghi chú của người bán</div>
+          <div class="panel-title">Ghi chĂº cá»§a người bĂ¡n</div>
           <p class="detail-paragraph">{{ listing.notes }}</p>
         </div>
       {% endif %}
 
       {% if listing.book_desc %}
         <div class="panel">
-          <div class="panel-title">Giới thiệu sách</div>
+          <div class="panel-title">Giá»›i thiệu sĂ¡ch</div>
           <p class="detail-paragraph">{{ listing.book_desc }}</p>
         </div>
       {% endif %}
@@ -133,7 +133,7 @@
             {% for i in range(5) %}
               {{ '★' if i < listing.rating_avg|int else '☆' }}
             {% endfor %}
-            <span class="seller-rating-note">({{ listing.rating_count }} đánh giá)</span>
+            <span class="seller-rating-note">({{ listing.rating_count }} Ä'Ă¡nh giĂ¡)</span>
           </div>
         {% endif %}
 
@@ -144,8 +144,8 @@
             </div>
           {% endif %}
           <a href="{{ url_for('chat', lid=listing.id, oid=listing.seller_id) }}"
-             class="btn btn-primary btn-block detail-message-btn">Nhắn tin người bán</a>
-          <button type="button" class="btn btn-outline btn-block" id="toggleReportBox">Report người bán</button>
+             class="btn btn-primary btn-block detail-message-btn">Nhắn tin người bĂ¡n</a>
+          <button type="button" class="btn btn-outline btn-block" id="toggleReportBox">Report người bĂ¡n</button>
           <div class="report-box" id="reportBox" hidden>
             <form method="POST" action="{{ url_for('report_user', lid=listing.id) }}">
               <select name="reason" class="form-control" style="margin-bottom:8px">
@@ -154,10 +154,10 @@
                 {% endfor %}
               </select>
               <textarea name="details" class="form-control" rows="3"
-                        placeholder="Mô tả ngắn sự việc, ví dụ đã chuyển khoản nhưng không giao sách"></textarea>
+                        placeholder="MĂ´ tả ngắn sá»± việc, vĂ­ dụ Ä'Ă£ chuyển khoản nhưng khĂ´ng giao sĂ¡ch"></textarea>
               <input type="url" name="evidence_url" class="form-control" style="margin-top:8px"
-                     placeholder="URL bằng chứng, ví dụ ảnh chụp màn hình hoặc bài đăng">
-              <button type="submit" class="btn btn-outline btn-block" style="margin-top:10px">Gửi report tới admin</button>
+                     placeholder="URL bằng chứng, vĂ­ dụ ảnh chụp mĂ n hình hoặc bĂ i đăng">
+              <button type="submit" class="btn btn-outline btn-block" style="margin-top:10px">Gá»­i report tá»›i admin</button>
             </form>
           </div>
         {% endif %}
@@ -167,37 +167,37 @@
              class="btn btn-outline btn-block" style="margin-top:10px">Sửa tin đăng</a>
           <form method="POST" action="{{ url_for('delete_listing', lid=listing.id) }}"
                 style="margin-top:10px"
-                onsubmit="return confirm('Xóa vĩnh viễn tin đăng này?')">
-            <button type="submit" class="btn btn-danger btn-block">Xóa tin đăng</button>
+                onsubmit="return confirm('XĂ³a vÄ©nh viá»…n tin đăng nĂ y?')">
+            <button type="submit" class="btn btn-danger btn-block">XĂ³a tin đăng</button>
           </form>
         {% endif %}
 
         <button class="wishlist-btn btn btn-outline btn-block"
                 data-lid="{{ listing.id }}"
                 style="position:static;width:100%;border-radius:var(--radius-sm);height:auto;padding:9px 20px;font-size:.88rem">
-          {{ 'Đã lưu tin' if in_wishlist else 'Lưu tin' }}
+          {{ 'ÄĂ£ lưu tin' if in_wishlist else 'Lưu tin' }}
         </button>
       </div>
 
       <div class="detail-status-box">
         <div class="detail-status-row">
-          <span class="detail-status-label">Trạng thái</span>
+          <span class="detail-status-label">Trạng thĂ¡i</span>
           <span class="badge {{ 'badge-green' if listing.status=='active' else 'badge-gray' }}">
-            {{ 'Đang bán' if listing.status=='active' else listing.status }}
+            {{ 'Đang bĂ¡n' if listing.status=='active' else listing.status }}
           </span>
         </div>
         {% if listing.listing_type == 'sell' %}
           <div class="detail-status-row">
-            <span class="detail-status-label">Giá</span>
+            <span class="detail-status-label">GiĂ¡</span>
             <span class="detail-status-price">
-              {{ '{:,.0f}'.format(listing.price) }}đ
+              {{ '{:,.0f}'.format(listing.price) }}Ä'
             </span>
           </div>
         {% endif %}
       </div>
 
       <div class="detail-safety-note">
-        <strong>Lưu ý an toàn:</strong> Hãy gặp mặt trao đổi tại nơi công cộng trong khuôn viên trường. Kiểm tra kỹ sách trước khi thanh toán.
+        <strong>Lưu Ă½ an toĂ n:</strong> HĂ£y gặp mặt trao đổi tại nÆ¡i cĂ´ng cá»™ng trong khuĂ´n viĂªn trường. Kiểm tra kỹ sĂ¡ch trước khi thanh toĂ¡n.
       </div>
 
     </div>
@@ -206,8 +206,8 @@
   {% if related %}
     <div class="divider" style="margin:30px 0 20px"></div>
     <div class="section-header">
-      <div class="section-title">Sách liên quan</div>
-      <a href="{{ url_for('listings') }}" class="btn btn-outline btn-sm">Xem thêm</a>
+      <div class="section-title">SĂ¡ch liĂªn quan</div>
+      <a href="{{ url_for('listings') }}" class="btn btn-outline btn-sm">Xem thĂªm</a>
     </div>
     <div class="book-grid">
       {% for r in related %}
@@ -216,15 +216,15 @@
             {% if r.cover_image %}
               <img src="{{ r.cover_image }}" alt="{{ r.title }}" class="book-cover-image">
             {% else %}
-              <span class="book-card-cover-label">Sách</span>
+              <span class="book-card-cover-label">SĂ¡ch</span>
             {% endif %}
           </div>
           <div class="book-card-body">
             <div class="book-card-title">{{ r.title }}</div>
             {% if r.listing_type == 'sell' %}
-              <div class="book-card-price">{{ '{:,.0f}'.format(r.price) }}đ</div>
+              <div class="book-card-price">{{ '{:,.0f}'.format(r.price) }}Ä'</div>
             {% elif r.listing_type == 'free' %}
-              <div class="book-card-price book-card-free">Miễn phí</div>
+              <div class="book-card-price book-card-free">Miá»…n phĂ­</div>
             {% else %}
               <div class="book-card-price book-card-exchange">Trao đổi</div>
             {% endif %}

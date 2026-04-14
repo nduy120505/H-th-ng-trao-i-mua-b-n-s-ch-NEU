@@ -45,10 +45,11 @@
               <option value="">— Chọn danh mục —</option>
               {% for cat in categories %}
                 <option value="{{ cat.id }}" {{ 'selected' if listing.category_id == cat.id }}>
-                  {{ '↳ ' if cat.parent_id }}{{ cat.name }}
+                  {{ cat.name }}
                 </option>
               {% endfor %}
             </select>
+              <span class="form-hint">Danh mục chỉ còn Môn học đại cương và các khoa.</span>
           </div>
           <div class="form-group">
             <label class="form-label">Mã môn học</label>
@@ -56,15 +57,20 @@
           </div>
         </div>
 
+        {% set selected_years = parse_book_years(listing.course_year) %}
         <div class="form-row-2">
           <div class="form-group">
             <label class="form-label">Năm học</label>
-            <select name="course_year" class="form-control">
-              <option value="">— Chọn năm —</option>
-              {% for y in range(1,6) %}
-                <option value="{{ y }}" {{ 'selected' if listing.course_year == y }}>Năm {{ y }}</option>
+            <div class="year-checkbox-grid">
+              {% for y in VALID_BOOK_YEARS %}
+                <label class="year-checkbox-option">
+                  <input type="checkbox" name="course_year" value="{{ y }}"
+                         {{ 'checked' if y in selected_years }}>
+                  <span>Năm {{ y }}</span>
+                </label>
               {% endfor %}
-            </select>
+            </div>
+            <span class="form-hint">Có thể chọn nhiều năm cho cùng một quyển sách.</span>
           </div>
           <div class="form-group">
             <label class="form-label">URL ảnh bìa sách</label>

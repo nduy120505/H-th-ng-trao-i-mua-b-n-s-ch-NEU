@@ -81,6 +81,9 @@ LISTING_STATUS_META = {
 }
 
 
+VALID_BOOK_YEARS = ("1", "2", "3", "4")
+
+
 def can_view_listing(listing, user_id, role):
     if not listing:
         return False
@@ -99,6 +102,37 @@ def format_local_timestamp(value, fmt="%H:%M"):
         return dt.strftime(fmt)
     except ValueError:
         return value
+
+
+def normalize_book_years(values):
+    normalized = []
+    seen = set()
+    for value in values or []:
+        year = str(value).strip()
+        if year in VALID_BOOK_YEARS and year not in seen:
+            normalized.append(year)
+            seen.add(year)
+    return normalized
+
+
+def parse_book_years(value):
+    if value is None:
+        return []
+    if isinstance(value, int):
+        return normalize_book_years([value])
+    return normalize_book_years(str(value).replace(";", ",").split(","))
+
+
+def serialize_book_years(values):
+    normalized = normalize_book_years(values)
+    return ",".join(normalized) if normalized else None
+
+
+def format_book_years(value):
+    years = parse_book_years(value)
+    if not years:
+        return ""
+    return ", ".join(f"Năm {year}" for year in years)
 
 
 def serialize_message(row, current_user_id):
@@ -212,6 +246,9 @@ def inject_globals():
         TYPE_LABELS=TYPE_LABELS,
         REPORT_REASONS=REPORT_REASONS,
         LISTING_STATUS_META=LISTING_STATUS_META,
+        VALID_BOOK_YEARS=VALID_BOOK_YEARS,
+        parse_book_years=parse_book_years,
+        format_book_years=format_book_years,
         format_local_timestamp=format_local_timestamp,
     )
 
@@ -381,8 +418,7 @@ def listings():
     cat_id      = request.args.get("cat", "")
     ltype       = request.args.get("type", "")
     condition   = request.args.get("condition", "")
-    faculty     = request.args.get("faculty", "")
-    course_year = request.args.get("year", "")
+    course_years = normalize_book_years(request.args.getlist("year"))
     sort        = request.args.get("sort", "newest")
     page        = max(1, int(request.args.get("page", 1)))
     per_page    = 12
@@ -400,10 +436,13 @@ def listings():
         where.append("l.listing_type=?");   params.append(ltype)
     if condition:
         where.append("l.condition=?");      params.append(condition)
-    if faculty:
-        where.append("b.faculty=?");        params.append(faculty)
-    if course_year and course_year.isdigit():
-        where.append("b.course_year=?");    params.append(int(course_year))
+    if course_years:
+        where.append(
+            "(" + " OR ".join(
+                ["instr(',' || ifnull(b.course_year, '') || ',', ?) > 0"] * len(course_years)
+            ) + ")"
+        )
+        params += [f",{year}," for year in course_years]
 
     where_sql = "WHERE " + " AND ".join(where)
     order_map = {
@@ -441,10 +480,7 @@ def listings():
     ).fetchall()
 
     all_cats = conn.execute(
-        "SELECT * FROM categories ORDER BY parent_id NULLS FIRST, sort_order"
-    ).fetchall()
-    faculties = conn.execute(
-        "SELECT DISTINCT faculty FROM books WHERE faculty IS NOT NULL ORDER BY faculty"
+        "SELECT * FROM categories WHERE parent_id IS NULL ORDER BY sort_order"
     ).fetchall()
     wl = conn.execute(
         "SELECT listing_id FROM wishlist WHERE user_id=?", (session["user_id"],)
@@ -459,10 +495,9 @@ def listings():
         page=page,
         pages=(total + per_page - 1) // per_page,
         all_cats=all_cats,
-        faculties=faculties,
         wishlist_ids=wishlist_ids,
         q=q, cat_id=cat_id, ltype=ltype, condition=condition,
-        faculty=faculty, course_year=course_year, sort=sort,
+        course_years=course_years, sort=sort,
     )
 
 
@@ -540,7 +575,7 @@ def post_listing():
         "LEFT JOIN categories c ON c.id=b.category_id ORDER BY b.title"
     ).fetchall()
     categories = conn.execute(
-        "SELECT * FROM categories ORDER BY parent_id NULLS FIRST, sort_order"
+        "SELECT * FROM categories WHERE parent_id IS NULL ORDER BY sort_order"
     ).fetchall()
     errors = {}
 
@@ -558,7 +593,7 @@ def post_listing():
         new_author  = request.form.get("new_author", "").strip()
         new_cat_id  = request.form.get("new_cat_id", "").strip()
         new_subject = request.form.get("new_subject", "").strip()
-        new_year    = request.form.get("new_year", "").strip()
+        new_years   = request.form.getlist("new_year")
 
         if (not book_id or is_new_book) and not new_title:
             errors["book"] = "Chọn sách hoặc nhập tên sách mới"
@@ -582,7 +617,7 @@ def post_listing():
                         new_author or None,
                         int(new_cat_id) if new_cat_id.isdigit() else None,
                         new_subject or None,
-                        int(new_year) if new_year.isdigit() else None,
+                        serialize_book_years(new_years),
                         cover_image or new_cover_image or None,
                     ),
                 )
@@ -643,8 +678,18 @@ def edit_listing(lid):
         flash("Ban khong co quyen sua tin dang nay.", "danger")
         return redirect(url_for("profile"))
 
+    category_meta = None
+    if listing["category_id"]:
+        category_meta = conn.execute(
+            "SELECT id, parent_id FROM categories WHERE id=?",
+            (listing["category_id"],),
+        ).fetchone()
+        if category_meta and category_meta["parent_id"]:
+            listing = dict(listing)
+            listing["category_id"] = category_meta["parent_id"]
+
     categories = conn.execute(
-        "SELECT * FROM categories ORDER BY parent_id NULLS FIRST, sort_order"
+        "SELECT * FROM categories WHERE parent_id IS NULL ORDER BY sort_order"
     ).fetchall()
     errors = {}
 
@@ -653,7 +698,7 @@ def edit_listing(lid):
         author = request.form.get("author", "").strip()
         cat_id = request.form.get("category_id", "").strip()
         subject_code = request.form.get("subject_code", "").strip()
-        course_year = request.form.get("course_year", "").strip()
+        course_years = request.form.getlist("course_year")
         cover_image = request.form.get("cover_image", "").strip()
         ltype = request.form.get("listing_type", "").strip()
         price = request.form.get("price", "0").strip()
@@ -682,7 +727,7 @@ def edit_listing(lid):
                     author or None,
                     int(cat_id) if cat_id.isdigit() else None,
                     subject_code or None,
-                    int(course_year) if course_year.isdigit() else None,
+                    serialize_book_years(course_years),
                     cover_image or None,
                     listing["book_id"],
                 ),
@@ -714,7 +759,7 @@ def edit_listing(lid):
                 "author": author,
                 "category_id": int(cat_id) if cat_id.isdigit() else None,
                 "subject_code": subject_code,
-                "course_year": int(course_year) if course_year.isdigit() else None,
+                "course_year": serialize_book_years(course_years),
                 "cover_image": cover_image,
                 "listing_type": ltype,
                 "price": price,
@@ -1142,7 +1187,7 @@ def review_report(rid):
     conn.commit()
     conn.close()
     flash(
-        "ÄĂ£ Ä‘Ă¡nh dáº¥u report lĂ  Ä‘Ă£ xem xĂ©t." if updated else "KhĂ´ng thá»ƒ cáº­p nháº­t report nĂ y.",
+        "ÄĂ£ Ä'Ă¡nh dấu report lĂ  Ä'Ă£ xem xĂ©t." if updated else "KhĂ´ng thể cập nhật report nĂ y.",
         "success" if updated else "warning",
     )
     return redirect(url_for("admin"))
@@ -1164,7 +1209,7 @@ def dismiss_report(rid):
     conn.commit()
     conn.close()
     flash(
-        "ÄĂ£ bá» qua report." if updated else "KhĂ´ng thá»ƒ cáº­p nháº­t report nĂ y.",
+        "ÄĂ£ bỏ qua report." if updated else "KhĂ´ng thể cập nhật report nĂ y.",
         "info" if updated else "warning",
     )
     return redirect(url_for("admin"))

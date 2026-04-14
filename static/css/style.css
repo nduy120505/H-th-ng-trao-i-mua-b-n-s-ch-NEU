@@ -312,6 +312,24 @@ input, select, textarea, button { font-family: inherit; }
 .form-control.error  { border-color: var(--neu-red); }
 .form-error { font-size: .77rem; color: var(--neu-red); margin-top: 4px; display: block; }
 .form-hint  { font-size: .77rem; color: var(--gray-500); margin-top: 4px; }
+.year-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.year-checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  cursor: pointer;
+  font-size: .88rem;
+  color: var(--gray-700);
+}
+.year-checkbox-option input[type=checkbox] { accent-color: var(--neu-blue); }
 
 .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }

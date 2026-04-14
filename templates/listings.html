@@ -16,6 +16,7 @@
       <form method="GET" action="{{ url_for('listings') }}" id="filterForm">
         {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
         <div class="filter-title">Bộ lọc</div>
+
         <div class="filter-group">
           <div class="filter-label">Loại giao dịch</div>
           <div class="filter-options">
@@ -23,16 +24,16 @@
               <input type="radio" name="type" value="" {{ 'checked' if not ltype }} onchange="this.form.submit()">
               Tất cả
             </label>
-            <label class="filter-option {{ 'active' if ltype=='sell' }}">
-              <input type="radio" name="type" value="sell" {{ 'checked' if ltype=='sell' }} onchange="this.form.submit()">
+            <label class="filter-option {{ 'active' if ltype == 'sell' }}">
+              <input type="radio" name="type" value="sell" {{ 'checked' if ltype == 'sell' }} onchange="this.form.submit()">
               Bán
             </label>
-            <label class="filter-option {{ 'active' if ltype=='exchange' }}">
-              <input type="radio" name="type" value="exchange" {{ 'checked' if ltype=='exchange' }} onchange="this.form.submit()">
+            <label class="filter-option {{ 'active' if ltype == 'exchange' }}">
+              <input type="radio" name="type" value="exchange" {{ 'checked' if ltype == 'exchange' }} onchange="this.form.submit()">
               Trao đổi
             </label>
-            <label class="filter-option {{ 'active' if ltype=='free' }}">
-              <input type="radio" name="type" value="free" {{ 'checked' if ltype=='free' }} onchange="this.form.submit()">
+            <label class="filter-option {{ 'active' if ltype == 'free' }}">
+              <input type="radio" name="type" value="free" {{ 'checked' if ltype == 'free' }} onchange="this.form.submit()">
               Miễn phí
             </label>
           </div>
@@ -46,8 +47,8 @@
               Tất cả
             </label>
             {% for val, (label, cls) in CONDITION_LABELS.items() %}
-              <label class="filter-option {{ 'active' if condition==val }}">
-                <input type="radio" name="condition" value="{{ val }}" {{ 'checked' if condition==val }} onchange="this.form.submit()">
+              <label class="filter-option {{ 'active' if condition == val }}">
+                <input type="radio" name="condition" value="{{ val }}" {{ 'checked' if condition == val }} onchange="this.form.submit()">
                 {{ label }}
               </label>
             {% endfor %}
@@ -62,37 +63,10 @@
               Tất cả danh mục
             </label>
             {% for cat in all_cats %}
-              {% if not cat.parent_id %}
-                <label class="filter-option {{ 'active' if cat_id==cat.id|string }}"
-                       style="font-weight:600">
-                  <input type="radio" name="cat" value="{{ cat.id }}"
-                         {{ 'checked' if cat_id==cat.id|string }} onchange="this.form.submit()">
-                  {{ cat.name }}
-                </label>
-              {% else %}
-                <label class="filter-option {{ 'active' if cat_id==cat.id|string }}"
-                       style="padding-left:20px">
-                  <input type="radio" name="cat" value="{{ cat.id }}"
-                         {{ 'checked' if cat_id==cat.id|string }} onchange="this.form.submit()">
-                  ↳ {{ cat.name }}
-                </label>
-              {% endif %}
-            {% endfor %}
-          </div>
-        </div>
-
-        <div class="filter-group">
-          <div class="filter-label">Khoa / Bộ môn</div>
-          <div class="filter-options" style="max-height:160px;overflow-y:auto">
-            <label class="filter-option {{ 'active' if not faculty }}">
-              <input type="radio" name="faculty" value="" {{ 'checked' if not faculty }} onchange="this.form.submit()">
-              Tất cả khoa
-            </label>
-            {% for f in faculties %}
-              <label class="filter-option {{ 'active' if faculty==f.faculty }}">
-                <input type="radio" name="faculty" value="{{ f.faculty }}"
-                       {{ 'checked' if faculty==f.faculty }} onchange="this.form.submit()">
-                {{ f.faculty }}
+              <label class="filter-option {{ 'active' if cat_id == cat.id|string }}">
+                <input type="radio" name="cat" value="{{ cat.id }}"
+                       {{ 'checked' if cat_id == cat.id|string }} onchange="this.form.submit()">
+                {{ cat.name }}
               </label>
             {% endfor %}
           </div>
@@ -100,12 +74,15 @@
 
         <div class="filter-group">
           <div class="filter-label">Năm học</div>
-          <select name="year" class="form-control" style="font-size:.82rem" onchange="this.form.submit()">
-            <option value="">Tất cả năm</option>
-            {% for y in range(1,6) %}
-              <option value="{{ y }}" {{ 'selected' if course_year==y|string }}>Năm {{ y }}</option>
+          <div class="filter-options">
+            {% for y in VALID_BOOK_YEARS %}
+              <label class="filter-option {{ 'active' if y in course_years }}">
+                <input type="checkbox" name="year" value="{{ y }}"
+                       {{ 'checked' if y in course_years }} onchange="this.form.submit()">
+                Năm {{ y }}
+              </label>
             {% endfor %}
-          </select>
+          </div>
         </div>
 
         <a href="{{ url_for('listings') }}" class="btn btn-ghost btn-sm btn-block">
@@ -113,6 +90,7 @@
         </a>
       </form>
     </aside>
+
     <div>
       <div class="listings-toolbar">
         <div class="listings-count">
@@ -128,7 +106,7 @@
                                    ('price_asc','Giá tăng dần'),('price_desc','Giá giảm dần'),
                                    ('popular','Phổ biến nhất')] %}
               <option value="{{ url_for('listings') }}?{{ request.query_string.decode().replace('sort='+sort,'').strip('&') }}&sort={{ val }}"
-                      {{ 'selected' if sort==val }}>
+                      {{ 'selected' if sort == val }}>
                 {{ label }}
               </option>
             {% endfor %}
@@ -154,11 +132,11 @@
                 <div class="book-card-title">{{ l.title }}</div>
                 <div class="book-card-author">{{ l.author or '' }}</div>
                 <div class="book-card-meta">
-                  {% set type_info = TYPE_LABELS.get(l.listing_type,('','')) %}
-                  <span class="badge {{ 'badge-red' if l.listing_type=='sell' else ('badge-blue' if l.listing_type=='exchange' else 'badge-green') }}">
+                  {% set type_info = TYPE_LABELS.get(l.listing_type, ('', '')) %}
+                  <span class="badge {{ 'badge-red' if l.listing_type == 'sell' else ('badge-blue' if l.listing_type == 'exchange' else 'badge-green') }}">
                     {{ type_info[1] }} {{ type_info[0] }}
                   </span>
-                  {% set cond_info = CONDITION_LABELS.get(l.condition,('','badge-gray')) %}
+                  {% set cond_info = CONDITION_LABELS.get(l.condition, ('', 'badge-gray')) %}
                   <span class="badge {{ cond_info[1] }}">{{ cond_info[0] }}</span>
                 </div>
                 {% if l.listing_type == 'sell' %}
@@ -175,25 +153,25 @@
             </a>
           {% endfor %}
         </div>
+
         {% if pages > 1 %}
           <div class="pagination">
             <a href="?{{ request.query_string.decode() | replace('page='+page|string,'') }}&page={{ page-1 }}"
-               class="page-btn {{ 'disabled' if page==1 }}">‹</a>
+               class="page-btn {{ 'disabled' if page == 1 }}">‹</a>
             {% for p in range(1, pages+1) %}
               {% if p == page %}
                 <span class="page-btn active">{{ p }}</span>
-              {% elif p <= 2 or p >= pages-1 or (p >= page-2 and p <= page+2) %}
+              {% elif p <= 2 or p >= pages - 1 or (p >= page - 2 and p <= page + 2) %}
                 <a href="?{{ request.query_string.decode() | replace('page='+page|string,'') }}&page={{ p }}"
                    class="page-btn">{{ p }}</a>
-              {% elif p == 3 or p == pages-2 %}
+              {% elif p == 3 or p == pages - 2 %}
                 <span class="page-btn disabled">…</span>
               {% endif %}
             {% endfor %}
             <a href="?{{ request.query_string.decode() | replace('page='+page|string,'') }}&page={{ page+1 }}"
-               class="page-btn {{ 'disabled' if page==pages }}">›</a>
+               class="page-btn {{ 'disabled' if page == pages }}">›</a>
           </div>
         {% endif %}
-
       {% else %}
         <div class="empty-state">
           <h3>Không tìm thấy kết quả phù hợp</h3>
@@ -201,7 +179,6 @@
           <a href="{{ url_for('listings') }}" class="btn btn-outline empty-state-action">Xem tất cả sách</a>
         </div>
       {% endif %}
-
     </div>
   </div>
 
