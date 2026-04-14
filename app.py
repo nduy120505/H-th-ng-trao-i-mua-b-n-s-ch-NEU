@@ -509,6 +509,8 @@ def post_listing():
         condition   = request.form.get("condition", "").strip()
         notes       = request.form.get("notes", "").strip()
         exchange_for= request.form.get("exchange_for", "").strip()
+        cover_image = request.form.get("cover_image", "").strip()
+        new_cover_image = request.form.get("new_cover_image", "").strip()
         new_title   = request.form.get("new_title", "").strip()
         new_author  = request.form.get("new_author", "").strip()
         new_cat_id  = request.form.get("new_cat_id", "").strip()
@@ -535,11 +537,17 @@ def post_listing():
                         int(new_cat_id) if new_cat_id.isdigit() else None,
                         new_subject or None,
                         int(new_year) if new_year.isdigit() else None,
-                        request.form.get("new_cover_image", "").strip() or None,
+                        cover_image or new_cover_image or None,
                     ),
                 )
                 conn.commit()
                 book_id = cur.lastrowid
+            elif book_id and cover_image:
+                conn.execute(
+                    "UPDATE books SET cover_image=? WHERE id=?",
+                    (cover_image, int(book_id)),
+                )
+                conn.commit()
 
             price_val = float(price) if ltype == "sell" else 0
             conn.execute(
@@ -875,6 +883,7 @@ def report_user(lid):
 
     reason = request.form.get("reason", "").strip()
     details = request.form.get("details", "").strip()
+    evidence_url = request.form.get("evidence_url", "").strip()
     if reason not in REPORT_REASONS:
         conn.close()
         flash("Ly do report khong hop le.", "warning")
@@ -894,10 +903,10 @@ def report_user(lid):
 
     conn.execute(
         """
-        INSERT INTO user_reports(reporter_id, reported_user_id, listing_id, reason, details)
-        VALUES (?,?,?,?,?)
+        INSERT INTO user_reports(reporter_id, reported_user_id, listing_id, reason, details, evidence_url)
+        VALUES (?,?,?,?,?,?)
         """,
-        (session["user_id"], listing["seller_id"], lid, reason, details or None),
+        (session["user_id"], listing["seller_id"], lid, reason, details or None, evidence_url or None),
     )
     conn.commit()
     conn.close()

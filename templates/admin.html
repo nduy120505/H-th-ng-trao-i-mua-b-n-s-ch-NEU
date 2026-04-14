@@ -208,6 +208,11 @@
                       {% if r.details %}
                         <div style="font-size:.74rem;color:var(--gray-500);margin-top:3px">{{ r.details }}</div>
                       {% endif %}
+                      {% if r.evidence_url %}
+                        <div style="font-size:.74rem;margin-top:4px">
+                          <a href="{{ r.evidence_url }}" target="_blank" rel="noopener noreferrer">Xem bằng chứng</a>
+                        </div>
+                      {% endif %}
                     </td>
                     <td style="font-size:.82rem">
                       {% if r.listing_id %}

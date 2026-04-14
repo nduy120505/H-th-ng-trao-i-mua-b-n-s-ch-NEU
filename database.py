@@ -142,6 +142,7 @@ CREATE TABLE IF NOT EXISTS user_reports (
     listing_id       INTEGER REFERENCES listings(id) ON DELETE SET NULL,
     reason           TEXT NOT NULL,
     details          TEXT,
+    evidence_url     TEXT,
     status           TEXT DEFAULT 'pending'
                      CHECK(status IN ('pending','reviewed','dismissed')),
     resolved_by      INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -304,6 +305,7 @@ def ensure_db_schema(conn: sqlite3.Connection | None = None) -> None:
             listing_id       INTEGER REFERENCES listings(id) ON DELETE SET NULL,
             reason           TEXT NOT NULL,
             details          TEXT,
+            evidence_url     TEXT,
             status           TEXT DEFAULT 'pending'
                              CHECK(status IN ('pending','reviewed','dismissed')),
             resolved_by      INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -311,6 +313,11 @@ def ensure_db_schema(conn: sqlite3.Connection | None = None) -> None:
             created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    report_cols = {
+        row["name"] for row in cur.execute("PRAGMA table_info(user_reports)").fetchall()
+    }
+    if "evidence_url" not in report_cols:
+        cur.execute("ALTER TABLE user_reports ADD COLUMN evidence_url TEXT")
 
     book_cols = {
         row["name"] for row in cur.execute("PRAGMA table_info(books)").fetchall()

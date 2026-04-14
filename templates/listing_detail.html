@@ -145,16 +145,21 @@
           {% endif %}
           <a href="{{ url_for('chat', lid=listing.id, oid=listing.seller_id) }}"
              class="btn btn-primary btn-block detail-message-btn">Nhắn tin người bán</a>
-          <form method="POST" action="{{ url_for('report_user', lid=listing.id) }}" style="margin-bottom:10px">
-            <select name="reason" class="form-control" style="margin-bottom:8px">
-              {% for reason in REPORT_REASONS %}
-                <option value="{{ reason }}">{{ reason }}</option>
-              {% endfor %}
-            </select>
-            <textarea name="details" class="form-control" rows="3"
-                      placeholder="Mô tả ngắn lý do bạn nghi ngờ người dùng này"></textarea>
-            <button type="submit" class="btn btn-outline btn-block" style="margin-top:10px">Report người bán</button>
-          </form>
+          <button type="button" class="btn btn-outline btn-block" id="toggleReportBox">Report người bán</button>
+          <div class="report-box" id="reportBox" hidden>
+            <form method="POST" action="{{ url_for('report_user', lid=listing.id) }}">
+              <select name="reason" class="form-control" style="margin-bottom:8px">
+                {% for reason in REPORT_REASONS %}
+                  <option value="{{ reason }}">{{ reason }}</option>
+                {% endfor %}
+              </select>
+              <textarea name="details" class="form-control" rows="3"
+                        placeholder="Mô tả ngắn sự việc, ví dụ đã chuyển khoản nhưng không giao sách"></textarea>
+              <input type="url" name="evidence_url" class="form-control" style="margin-top:8px"
+                     placeholder="URL bằng chứng, ví dụ ảnh chụp màn hình hoặc bài đăng">
+              <button type="submit" class="btn btn-outline btn-block" style="margin-top:10px">Gửi report tới admin</button>
+            </form>
+          </div>
         {% endif %}
 
         <button class="wishlist-btn btn btn-outline btn-block"
@@ -219,4 +224,20 @@
     </div>
   {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const reportBtn = document.getElementById('toggleReportBox');
+  const reportBox = document.getElementById('reportBox');
+  reportBtn?.addEventListener('click', () => {
+    if (!reportBox) return;
+    const isHidden = reportBox.hasAttribute('hidden');
+    if (isHidden) {
+      reportBox.removeAttribute('hidden');
+    } else {
+      reportBox.setAttribute('hidden', '');
+    }
+  });
+</script>
 {% endblock %}
