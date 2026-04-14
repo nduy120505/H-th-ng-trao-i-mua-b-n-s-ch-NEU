@@ -87,6 +87,10 @@ def can_view_listing(listing, user_id, role):
     return listing["status"] == "active" or listing["seller_id"] == user_id or role == "admin"
 
 
+def can_manage_listing(listing, user_id, role):
+    return bool(listing) and (listing["seller_id"] == user_id or role == "admin")
+
+
 def format_local_timestamp(value, fmt="%H:%M"):
     if not value:
         return ""
@@ -620,6 +624,115 @@ def post_listing():
     )
 
 
+@app.route("/listing/<int:lid>/edit", methods=["GET", "POST"])
+@login_required
+def edit_listing(lid):
+    conn = get_db_connection()
+    listing = conn.execute(
+        """
+        SELECT l.*, b.title, b.author, b.category_id, b.subject_code, b.course_year,
+               b.cover_image, b.description book_desc
+        FROM listings l
+        JOIN books b ON b.id=l.book_id
+        WHERE l.id=?
+        """,
+        (lid,),
+    ).fetchone()
+    if not can_manage_listing(listing, session["user_id"], session.get("role")):
+        conn.close()
+        flash("Ban khong co quyen sua tin dang nay.", "danger")
+        return redirect(url_for("profile"))
+
+    categories = conn.execute(
+        "SELECT * FROM categories ORDER BY parent_id NULLS FIRST, sort_order"
+    ).fetchall()
+    errors = {}
+
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        author = request.form.get("author", "").strip()
+        cat_id = request.form.get("category_id", "").strip()
+        subject_code = request.form.get("subject_code", "").strip()
+        course_year = request.form.get("course_year", "").strip()
+        cover_image = request.form.get("cover_image", "").strip()
+        ltype = request.form.get("listing_type", "").strip()
+        price = request.form.get("price", "0").strip()
+        condition = request.form.get("condition", "").strip()
+        notes = request.form.get("notes", "").strip()
+        exchange_for = request.form.get("exchange_for", "").strip()
+
+        if not title:
+            errors["title"] = "Ten sach khong duoc trong"
+        if not ltype:
+            errors["listing_type"] = "Chon loai tin"
+        if not condition:
+            errors["condition"] = "Chon tinh trang sach"
+        if ltype == "sell" and (not price or not price.replace(".", "").isdigit()):
+            errors["price"] = "Nhap gia hop le"
+
+        if not errors:
+            conn.execute(
+                """
+                UPDATE books
+                SET title=?, author=?, category_id=?, subject_code=?, course_year=?, cover_image=?
+                WHERE id=?
+                """,
+                (
+                    title,
+                    author or None,
+                    int(cat_id) if cat_id.isdigit() else None,
+                    subject_code or None,
+                    int(course_year) if course_year.isdigit() else None,
+                    cover_image or None,
+                    listing["book_id"],
+                ),
+            )
+            conn.execute(
+                """
+                UPDATE listings
+                SET listing_type=?, price=?, condition=?, notes=?, exchange_for=?, updated_at=CURRENT_TIMESTAMP
+                WHERE id=?
+                """,
+                (
+                    ltype,
+                    float(price) if ltype == "sell" else 0,
+                    condition,
+                    notes or None,
+                    exchange_for or None,
+                    lid,
+                ),
+            )
+            conn.commit()
+            conn.close()
+            flash("Da cap nhat tin dang.", "success")
+            return redirect(url_for("listing_detail", lid=lid))
+
+        listing = dict(listing)
+        listing.update(
+            {
+                "title": title,
+                "author": author,
+                "category_id": int(cat_id) if cat_id.isdigit() else None,
+                "subject_code": subject_code,
+                "course_year": int(course_year) if course_year.isdigit() else None,
+                "cover_image": cover_image,
+                "listing_type": ltype,
+                "price": price,
+                "condition": condition,
+                "notes": notes,
+                "exchange_for": exchange_for,
+            }
+        )
+
+    conn.close()
+    return render_template(
+        "edit_listing.html",
+        listing=listing,
+        categories=categories,
+        errors=errors,
+    )
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Wishlist API
 # ─────────────────────────────────────────────────────────────────────────────
@@ -850,10 +963,12 @@ def profile():
 @login_required
 def close_listing(lid):
     conn = get_db_connection()
-    conn.execute(
-        "UPDATE listings SET status='closed' WHERE id=? AND seller_id=?",
-        (lid, session["user_id"]),
-    )
+    listing = conn.execute("SELECT id, seller_id FROM listings WHERE id=?", (lid,)).fetchone()
+    if not can_manage_listing(listing, session["user_id"], session.get("role")):
+        conn.close()
+        flash("Ban khong co quyen dong tin dang nay.", "danger")
+        return redirect(url_for("profile"))
+    conn.execute("UPDATE listings SET status='closed' WHERE id=?", (lid,))
     conn.commit()
     conn.close()
     flash("Tin đăng đã đóng.", "info")
@@ -864,10 +979,12 @@ def close_listing(lid):
 @login_required
 def delete_listing(lid):
     conn = get_db_connection()
-    conn.execute(
-        "DELETE FROM listings WHERE id=? AND seller_id=?",
-        (lid, session["user_id"]),
-    )
+    listing = conn.execute("SELECT id, seller_id FROM listings WHERE id=?", (lid,)).fetchone()
+    if not can_manage_listing(listing, session["user_id"], session.get("role")):
+        conn.close()
+        flash("Ban khong co quyen xoa tin dang nay.", "danger")
+        return redirect(url_for("profile"))
+    conn.execute("DELETE FROM listings WHERE id=?", (lid,))
     conn.commit()
     conn.close()
     flash("Đã xóa tin đăng.", "info")

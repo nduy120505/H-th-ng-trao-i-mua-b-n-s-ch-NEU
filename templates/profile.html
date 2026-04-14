@@ -205,6 +205,8 @@
                           <a href="{{ url_for('listing_detail', lid=l.id) }}"
                              class="btn btn-ghost btn-sm">Xem</a>
                         {% endif %}
+                        <a href="{{ url_for('edit_listing', lid=l.id) }}"
+                           class="btn btn-outline btn-sm">Sửa</a>
                         {% if l.status == 'active' %}
                           <form method="POST" action="{{ url_for('close_listing', lid=l.id) }}"
                                 style="margin:0"
