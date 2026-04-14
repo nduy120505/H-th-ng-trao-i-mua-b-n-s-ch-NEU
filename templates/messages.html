@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Tin Nhắn{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <div class="breadcrumb">
+    <a href="{{ url_for('home') }}">Trang chủ</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Tin nhắn</span>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <h1 style="font-size:1.2rem;font-weight:800">Hộp thư</h1>
+    {% if unread_count > 0 %}
+      <span class="badge badge-red">{{ unread_count }} tin chưa đọc</span>
+    {% endif %}
+  </div>
+
+  {% if convos %}
+    <div style="background:var(--white);border-radius:var(--radius-md);
+                box-shadow:var(--shadow-sm);overflow:hidden">
+      {% for c in convos %}
+        <a href="{{ url_for('chat', lid=c.listing_id, oid=c.other_id) }}"
+           style="display:flex;align-items:center;gap:14px;
+                  padding:16px 20px;border-bottom:1px solid var(--gray-100);
+                  transition:background var(--transition);"
+           onmouseover="this.style.background='var(--neu-blue-light)'"
+           onmouseout="this.style.background=''">
+          <div style="width:46px;height:46px;border-radius:50%;
+                      background:var(--neu-blue-light);flex-shrink:0;
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:1.2rem;font-weight:700;color:var(--neu-blue)">
+            {{ c.other_name[0] if c.other_name else '?' }}
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+              <span style="font-weight:700;font-size:.92rem;
+                           {{ 'color:var(--gray-900)' if c.unread else 'color:var(--gray-700)' }}">
+                {{ c.other_name or c.other_username }}
+              </span>
+              <span style="font-size:.72rem;color:var(--gray-400);flex-shrink:0">
+                {{ format_local_timestamp(c.last_time, '%d/%m %H:%M') if c.last_time else '' }}
+              </span>
+            </div>
+            <div style="font-size:.8rem;color:var(--gray-500);
+                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+                        margin-top:2px">
+              {{ c.book_title }}
+            </div>
+          </div>
+          {% if c.unread > 0 %}
+            <span class="badge badge-red" style="flex-shrink:0">{{ c.unread }}</span>
+          {% endif %}
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <h3>Chưa có tin nhắn nào</h3>
+      <p>Nhắn tin với người bán từ trang chi tiết tin đăng</p>
+      <a href="{{ url_for('listings') }}" class="btn btn-primary empty-state-action">Xem sách ngay</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

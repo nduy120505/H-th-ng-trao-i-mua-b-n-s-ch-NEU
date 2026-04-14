@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Trang Chủ{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value">{{ stats.total_listings }}</div>
+      <div class="stat-label">Tin đăng đang hoạt động</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ stats.total_users }}</div>
+      <div class="stat-label">Sinh viên tham gia</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ stats.total_books }}</div>
+      <div class="stat-label">Đầu sách trong hệ thống</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ stats.free_books }}</div>
+      <div class="stat-label">Sách cho miễn phí</div>
+    </div>
+  </div>
+  <div class="category-strip">
+    {% for cat in root_categories %}
+      <a href="{{ url_for('listings') }}?cat={{ cat.id }}" class="category-chip">{{ cat.name }}</a>
+    {% endfor %}
+  </div>
+  <div class="section-header">
+    <div class="section-title">Mới đăng gần đây</div>
+    <a href="{{ url_for('listings') }}" class="btn btn-outline btn-sm">Xem tất cả</a>
+  </div>
+
+  {% if recent %}
+    <div class="book-grid home-block">
+      {% for l in recent %}
+        <a href="{{ url_for('listing_detail', lid=l.id) }}" class="card book-card">
+          <div class="book-card-cover">
+            <span class="book-card-cover-label">Sách</span>
+            <button class="wishlist-btn {{ 'wishlisted' if l.id in wishlist_ids }}"
+                    data-lid="{{ l.id }}"
+                    title="{{ 'Bỏ yêu thích' if l.id in wishlist_ids else 'Thêm yêu thích' }}">
+              {{ 'Đã lưu' if l.id in wishlist_ids else 'Lưu' }}
+            </button>
+          </div>
+          <div class="book-card-body">
+            <div class="book-card-title">{{ l.title }}</div>
+            <div class="book-card-author">{{ l.author or 'Không rõ tác giả' }}</div>
+            <div class="book-card-meta">
+              {% set type_info = TYPE_LABELS.get(l.listing_type, ('', '')) %}
+              <span class="badge {{ 'badge-red' if l.listing_type=='sell' else ('badge-blue' if l.listing_type=='exchange' else 'badge-green') }}">
+                {{ type_info[1] }} {{ type_info[0] }}
+              </span>
+              {% set cond_info = CONDITION_LABELS.get(l.condition, ('','badge-gray')) %}
+              <span class="badge {{ cond_info[1] }}">{{ cond_info[0] }}</span>
+            </div>
+            {% if l.listing_type == 'sell' %}
+              <div class="book-card-price">{{ '{:,.0f}'.format(l.price) }}đ</div>
+            {% elif l.listing_type == 'free' %}
+              <div class="book-card-price book-card-free">Miễn phí</div>
+            {% else %}
+              <div class="book-card-price book-card-exchange">Trao đổi</div>
+            {% endif %}
+            <div class="book-card-foot">{{ l.seller_name or l.seller_username }}</div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <h3>Chưa có tin đăng nào</h3>
+      <p>Hãy là người đầu tiên đăng sách!</p>
+      <a href="{{ url_for('post_listing') }}" class="btn btn-primary empty-state-action">Đăng tin ngay</a>
+    </div>
+  {% endif %}
+  {% if popular %}
+    <div class="section-header">
+      <div class="section-title">Xem nhiều nhất</div>
+    </div>
+    <div class="book-grid home-block">
+      {% for l in popular %}
+        <a href="{{ url_for('listing_detail', lid=l.id) }}" class="card book-card">
+          <div class="book-card-cover">
+            <span class="book-card-cover-label">Sách</span>
+            <button class="wishlist-btn {{ 'wishlisted' if l.id in wishlist_ids }}" data-lid="{{ l.id }}">
+              {{ 'Đã lưu' if l.id in wishlist_ids else 'Lưu' }}
+            </button>
+          </div>
+          <div class="book-card-body">
+            <div class="book-card-title">{{ l.title }}</div>
+            <div class="book-card-author">{{ l.author or '' }}</div>
+            {% if l.listing_type == 'sell' %}
+              <div class="book-card-price">{{ '{:,.0f}'.format(l.price) }}đ</div>
+            {% elif l.listing_type == 'free' %}
+              <div class="book-card-price book-card-free">Miễn phí</div>
+            {% else %}
+              <div class="book-card-price book-card-exchange">Trao đổi</div>
+            {% endif %}
+            <div class="book-card-foot">{{ l.views }} lượt xem</div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+  <div class="home-cta">
+    <div class="home-cta-copy">
+      <div class="home-cta-title">Bạn có sách muốn bán hoặc trao đổi?</div>
+      <div class="home-cta-text">
+        Đăng tin miễn phí, kết nối ngay với hàng nghìn sinh viên NEU
+      </div>
+    </div>
+    <a href="{{ url_for('post_listing') }}" class="home-cta-action">Đăng tin ngay</a>
+  </div>
+</div>
+{% endblock %}

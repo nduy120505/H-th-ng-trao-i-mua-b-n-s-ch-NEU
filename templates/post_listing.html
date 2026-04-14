@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Đăng Tin Mới{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:800px">
+
+  <div class="breadcrumb">
+    <a href="{{ url_for('home') }}">Trang chủ</a>
+    <span class="breadcrumb-sep">›</span>
+      <span>Đăng tin mới</span>
+  </div>
+
+  <div class="panel">
+    <h1 style="font-size:1.3rem;font-weight:800;color:var(--gray-900);margin-bottom:4px">
+      Đăng tin bán / trao đổi sách
+    </h1>
+    <p style="font-size:.85rem;color:var(--gray-500);margin-bottom:28px">
+      Điền đầy đủ thông tin để admin duyệt nhanh hơn. Tin đăng chỉ hiển thị công khai sau khi được duyệt.
+    </p>
+
+    <form method="POST" action="{{ url_for('post_listing') }}">
+
+      <div style="background:var(--neu-blue-light);border-radius:var(--radius-md);
+                  padding:16px 20px;margin-bottom:24px">
+        <div style="font-size:.82rem;font-weight:700;color:var(--neu-blue);
+                    text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">
+          Bước 1 — Chọn sách
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Chọn sách có sẵn trong hệ thống</label>
+          <select name="book_id" id="book_id"
+                  class="form-control {{ 'error' if errors.book }}">
+            <option value="">— Chọn sách —</option>
+            <option value="__new__">Thêm sách mới (không có trong danh sách)</option>
+            {% for b in books %}
+              <option value="{{ b.id }}">
+                {{ b.title }}{% if b.author %} – {{ b.author }}{% endif %}
+                {% if b.cat_name %} [{{ b.cat_name }}]{% endif %}
+              </option>
+            {% endfor %}
+          </select>
+          {% if errors.book %}
+            <span class="form-error">{{ errors.book }}</span>
+          {% endif %}
+        </div>
+
+        <div id="newBookForm" style="display:none;
+             background:white;border-radius:var(--radius-sm);padding:16px;margin-top:12px">
+          <div style="font-size:.82rem;font-weight:700;color:var(--gray-700);margin-bottom:12px">
+            Thông tin sách mới
+          </div>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">Tên sách *</label>
+              <input type="text" name="new_title" id="new_title"
+                     class="form-control" placeholder="Nhập tên sách">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Tác giả</label>
+              <input type="text" name="new_author" class="form-control"
+                     placeholder="Tên tác giả">
+            </div>
+          </div>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">Danh mục</label>
+              <select name="new_cat_id" class="form-control">
+                <option value="">— Chọn danh mục —</option>
+                {% for cat in categories %}
+                  <option value="{{ cat.id }}"
+                          style="{{ 'font-weight:700' if not cat.parent_id }}">
+                    {{ '↳ ' if cat.parent_id }}{{ cat.name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Mã môn học</label>
+              <input type="text" name="new_subject" class="form-control"
+                     placeholder="VD: MATH101">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Năm học (dành cho sinh viên năm mấy)</label>
+            <select name="new_year" class="form-control">
+              <option value="">— Chọn năm —</option>
+              {% for y in range(1,6) %}
+                <option value="{{ y }}">Năm {{ y }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:var(--gray-50);border-radius:var(--radius-md);
+                  padding:16px 20px;margin-bottom:24px">
+        <div style="font-size:.82rem;font-weight:700;color:var(--gray-700);
+                    text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">
+          Bước 2 — Loại giao dịch
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Hình thức *</label>
+          <select name="listing_type" id="listing_type"
+                  class="form-control {{ 'error' if errors.listing_type }}">
+            <option value="">— Chọn hình thức —</option>
+            <option value="sell">Bán sách</option>
+            <option value="exchange">Trao đổi sách</option>
+            <option value="free">Cho tặng miễn phí</option>
+          </select>
+          {% if errors.listing_type %}
+            <span class="form-error">{{ errors.listing_type }}</span>
+          {% endif %}
+        </div>
+
+        <div class="form-group" id="priceRow" style="display:none">
+          <label class="form-label">Giá bán (VNĐ) *</label>
+          <input type="number" name="price" id="price"
+                 class="form-control {{ 'error' if errors.price }}"
+                 placeholder="VD: 50000" min="0" step="1000">
+          {% if errors.price %}
+            <span class="form-error">{{ errors.price }}</span>
+          {% endif %}
+          <span class="form-hint">Nhập giá bằng VNĐ, không có dấu phẩy</span>
+        </div>
+
+        <div class="form-group" id="exchangeRow" style="display:none">
+          <label class="form-label">Muốn đổi lấy sách gì?</label>
+          <input type="text" name="exchange_for"
+                 class="form-control"
+                 placeholder="VD: Kinh Tế Vi Mô, Toán Cao Cấp...">
+        </div>
+      </div>
+
+      <div style="background:var(--gray-50);border-radius:var(--radius-md);
+                  padding:16px 20px;margin-bottom:24px">
+        <div style="font-size:.82rem;font-weight:700;color:var(--gray-700);
+                    text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">
+          Bước 3 — Tình trạng sách
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Tình trạng sách *</label>
+          <select name="condition" class="form-control {{ 'error' if errors.condition }}">
+            <option value="">— Chọn tình trạng —</option>
+            {% for val, (label, cls) in CONDITION_LABELS.items() %}
+              <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+          {% if errors.condition %}
+            <span class="form-error">{{ errors.condition }}</span>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Ghi chú thêm</label>
+          <textarea name="notes" class="form-control" rows="3"
+                    placeholder="Mô tả tình trạng cụ thể, vị trí gặp mặt, thời gian rảnh..."></textarea>
+          <span class="form-hint">Thêm thông tin hữu ích giúp người mua quyết định nhanh hơn</span>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;justify-content:flex-end">
+        <a href="{{ url_for('home') }}" class="btn btn-ghost">Hủy</a>
+        <button type="submit" class="btn btn-primary btn-lg">
+          Gửi duyệt tin đăng
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+</div>
+{% endblock %}

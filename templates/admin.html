@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% block title %}Quản Trị Viên{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <div class="breadcrumb">
+    <a href="{{ url_for('home') }}">Trang chủ</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Quản trị viên</span>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap;margin-bottom:24px">
+    <div>
+      <h1 style="font-size:1.3rem;font-weight:800">Bảng điều khiển Admin</h1>
+      <div style="font-size:.84rem;color:var(--gray-500);margin-top:4px">
+        Duyệt tin đăng, theo dõi báo cáo và kiểm soát chất lượng nội dung trước khi hiển thị.
+      </div>
+    </div>
+    <span class="badge badge-red">Admin</span>
+  </div>
+
+  <div class="stats-grid" style="margin-bottom:24px">
+    <div class="stat-card">
+      <div class="stat-value">{{ stats.total_users }}</div>
+      <div class="stat-label">Tổng người dùng</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ stats.pending_listings }}</div>
+      <div class="stat-label">Tin chờ duyệt</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ stats.active_listings }}</div>
+      <div class="stat-label">Tin đang hiển thị</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ stats.total_messages }}</div>
+      <div class="stat-label">Tổng tin nhắn</div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:24px">
+    <div class="panel-title">Báo cáo tổng hợp</div>
+    <div class="report-grid">
+      <div class="report-card">
+        <div class="report-card-title">Điều tiết nội dung</div>
+        <div class="report-list">
+          <div class="report-row"><span>Đã duyệt hôm nay</span><strong>{{ stats.moderated_today }}</strong></div>
+          <div class="report-row"><span>Đang chờ duyệt</span><strong>{{ stats.pending_listings }}</strong></div>
+          <div class="report-row"><span>Bị từ chối</span><strong>{{ stats.rejected_listings }}</strong></div>
+          <div class="report-row"><span>Tổng tin đăng</span><strong>{{ stats.total_listings }}</strong></div>
+        </div>
+      </div>
+      <div class="report-card">
+        <div class="report-card-title">Loại tin đăng</div>
+        <div class="report-list">
+          {% for row in listing_type_report %}
+            <div class="report-row">
+              <span>{{ TYPE_LABELS.get(row.listing_type, (row.listing_type, ''))[0] }}</span>
+              <strong>{{ row.total }}</strong>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="report-card">
+        <div class="report-card-title">Khoa hoạt động mạnh</div>
+        <div class="report-list">
+          {% for row in faculty_report %}
+            <div class="report-row">
+              <span>{{ row.faculty }}</span>
+              <strong>{{ row.total }}</strong>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-grid">
+    <div class="admin-stack">
+      <div class="panel">
+        <div class="panel-title">Hàng chờ duyệt bài</div>
+        {% if pending_listings %}
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tin đăng</th>
+                  <th>Người đăng</th>
+                  <th>Loại</th>
+                  <th>Ngày tạo</th>
+                  <th>Duyệt</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for l in pending_listings %}
+                  <tr>
+                    <td>
+                      <div style="font-weight:700;font-size:.88rem">{{ l.title }}</div>
+                      <div style="font-size:.74rem;color:var(--gray-500);margin-top:3px">
+                        #{{ l.id }}{% if l.notes %} · {{ l.notes[:70] }}{% if l.notes|length > 70 %}…{% endif %}{% endif %}
+                      </div>
+                    </td>
+                    <td style="font-size:.82rem">
+                      {{ l.seller_name or l.seller }}
+                      <div style="font-size:.74rem;color:var(--gray-500)">@{{ l.seller }}</div>
+                    </td>
+                    <td>
+                      {% set type_info = TYPE_LABELS.get(l.listing_type, ('', '')) %}
+                      <span class="badge {{ 'badge-red' if l.listing_type=='sell' else ('badge-blue' if l.listing_type=='exchange' else 'badge-green') }}">
+                        {{ type_info[0] }}
+                      </span>
+                    </td>
+                    <td style="font-size:.78rem;color:var(--gray-500)">{{ format_local_timestamp(l.created_at, '%d/%m %H:%M') }}</td>
+                    <td>
+                      <a href="{{ url_for('listing_detail', lid=l.id) }}" class="btn btn-ghost btn-sm">Xem</a>
+                      <div class="moderation-actions">
+                        <form method="POST" action="{{ url_for('approve_listing', lid=l.id) }}">
+                          <button type="submit" class="btn btn-primary btn-sm">Duyệt</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('reject_listing', lid=l.id) }}">
+                          <input type="text" name="moderation_note" class="form-control moderation-note-input"
+                                 placeholder="Lý do từ chối (không bắt buộc)">
+                          <button type="submit" class="btn btn-outline btn-sm" style="margin-top:8px">Từ chối</button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty-state" style="padding:30px 20px">
+            <h3>Không có tin nào đang chờ duyệt</h3>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Lịch sử moderation gần đây</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Tin đăng</th>
+                <th>Người đăng</th>
+                <th>Kết quả</th>
+                <th>Admin</th>
+                <th>Thời gian</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in moderation_report %}
+                {% set status_info = LISTING_STATUS_META.get(row.status, (row.status, 'badge-gray')) %}
+                <tr>
+                  <td>
+                    <div style="font-weight:600;font-size:.86rem">{{ row.title }}</div>
+                    {% if row.moderation_note %}
+                      <div style="font-size:.74rem;color:var(--gray-500);margin-top:3px">{{ row.moderation_note }}</div>
+                    {% endif %}
+                  </td>
+                  <td style="font-size:.82rem">@{{ row.seller }}</td>
+                  <td><span class="badge {{ status_info[1] }}">{{ status_info[0] }}</span></td>
+                  <td style="font-size:.82rem">{{ row.admin_name or '—' }}</td>
+                  <td style="font-size:.78rem;color:var(--gray-500)">{{ format_local_timestamp(row.moderated_at, '%d/%m %H:%M') }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-stack">
+      <div class="panel">
+        <div class="panel-title">Người dùng mới nhất</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Tài khoản</th>
+                <th>Khoa</th>
+                <th>Ngày tạo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for u in recent_users %}
+                <tr>
+                  <td>
+                    <div style="font-weight:600">{{ u.full_name or u.username }}</div>
+                    <div style="font-size:.74rem;color:var(--gray-500)">@{{ u.username }}</div>
+                  </td>
+                  <td style="font-size:.78rem;color:var(--gray-500)">{{ u.faculty or '—' }}</td>
+                  <td style="font-size:.78rem;color:var(--gray-500)">{{ u.created_at[:10] }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Người đăng tích cực</div>
+        <div class="report-list">
+          {% for row in top_sellers %}
+            <div class="report-row">
+              <span>{{ row.full_name or row.username }}</span>
+              <strong>{{ row.total_listings }} tin</strong>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Tin đăng mới nhất</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Sách</th>
+                <th>Người đăng</th>
+                <th>Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for l in recent_listings %}
+                {% set status_info = LISTING_STATUS_META.get(l.status, (l.status, 'badge-gray')) %}
+                <tr>
+                  <td>
+                    <a href="{{ url_for('listing_detail', lid=l.id) }}"
+                       style="font-size:.85rem;font-weight:600;color:var(--neu-blue)">
+                      {{ l.title[:32] }}{% if l.title|length > 32 %}…{% endif %}
+                    </a>
+                  </td>
+                  <td style="font-size:.8rem">@{{ l.seller }}</td>
+                  <td><span class="badge {{ status_info[1] }}">{{ status_info[0] }}</span></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

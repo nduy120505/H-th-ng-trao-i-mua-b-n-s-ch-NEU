@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block title %}{{ listing.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <div class="breadcrumb">
+    <a href="{{ url_for('home') }}">Trang chủ</a>
+    <span class="breadcrumb-sep">›</span>
+    <a href="{{ url_for('listings') }}">Sách</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>{{ listing.title }}</span>
+  </div>
+
+  <div class="detail-layout">
+
+    <div>
+      <div class="detail-cover">Sách</div>
+      <h1 class="detail-title">{{ listing.title }}</h1>
+      <div class="detail-author">
+        {% if listing.author %}{{ listing.author }}{% endif %}
+        {% if listing.publisher %} · {{ listing.publisher }}{% endif %}
+        {% if listing.publish_year %} · {{ listing.publish_year }}{% endif %}
+      </div>
+
+      <div class="detail-meta">
+        {% set type_info = TYPE_LABELS.get(listing.listing_type, ('','')) %}
+        <span class="badge {{ 'badge-red' if listing.listing_type=='sell' else ('badge-blue' if listing.listing_type=='exchange' else 'badge-green') }}"
+              style="font-size:.82rem;padding:5px 12px">
+          {{ type_info[1] }} {{ type_info[0] }}
+        </span>
+        {% set cond_info = CONDITION_LABELS.get(listing.condition, ('','badge-gray')) %}
+        <span class="badge {{ cond_info[1] }}" style="font-size:.82rem;padding:5px 12px">
+          {{ cond_info[0] }}
+        </span>
+        {% if listing.cat_name %}
+          <span class="badge badge-gray" style="font-size:.82rem;padding:5px 12px">
+            {{ listing.cat_name }}
+          </span>
+        {% endif %}
+        <span class="badge badge-gray" style="font-size:.82rem;padding:5px 12px">
+          {{ listing.views }} lượt xem
+        </span>
+      </div>
+
+      {% if listing.listing_type == 'sell' %}
+        <div class="detail-price">{{ '{:,.0f}'.format(listing.price) }}đ</div>
+      {% elif listing.listing_type == 'free' %}
+        <div class="detail-price-free">Miễn phí</div>
+      {% else %}
+        <div class="detail-price book-card-exchange">Trao đổi</div>
+        {% if listing.exchange_for %}
+          <div class="detail-note">Đổi lấy: <strong>{{ listing.exchange_for }}</strong></div>
+        {% endif %}
+      {% endif %}
+
+      <div class="detail-info">
+        <div class="detail-section-label">Thông tin sách</div>
+        {% if listing.subject_code %}
+          <div class="detail-info-row">
+            <span class="detail-info-label">Mã môn học</span>
+            <span class="detail-info-value">{{ listing.subject_code }}</span>
+          </div>
+        {% endif %}
+        {% if listing.isbn %}
+          <div class="detail-info-row">
+            <span class="detail-info-label">ISBN</span>
+            <span class="detail-info-value">{{ listing.isbn }}</span>
+          </div>
+        {% endif %}
+        {% if listing.edition %}
+          <div class="detail-info-row">
+            <span class="detail-info-label">Phiên bản</span>
+            <span class="detail-info-value">{{ listing.edition }}</span>
+          </div>
+        {% endif %}
+        {% if listing.book_faculty %}
+          <div class="detail-info-row">
+            <span class="detail-info-label">Khoa</span>
+            <span class="detail-info-value">{{ listing.book_faculty }}</span>
+          </div>
+        {% endif %}
+        {% if listing.book_year %}
+          <div class="detail-info-row">
+            <span class="detail-info-label">Dành cho năm</span>
+            <span class="detail-info-value">Năm {{ listing.book_year }}</span>
+          </div>
+        {% endif %}
+        <div class="detail-info-row">
+          <span class="detail-info-label">Ngày đăng</span>
+          <span class="detail-info-value">{{ listing.created_at[:10] }}</span>
+        </div>
+      </div>
+
+      {% if listing.notes %}
+        <div class="panel">
+          <div class="panel-title">Ghi chú của người bán</div>
+          <p class="detail-paragraph">{{ listing.notes }}</p>
+        </div>
+      {% endif %}
+
+      {% if listing.book_desc %}
+        <div class="panel">
+          <div class="panel-title">Giới thiệu sách</div>
+          <p class="detail-paragraph">{{ listing.book_desc }}</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <div>
+      <div class="seller-card detail-side-card">
+        <div class="seller-head">
+          <div class="seller-avatar">
+            {{ listing.seller_name[0] if listing.seller_name else 'U' }}
+          </div>
+          <div>
+            <div class="seller-name">{{ listing.seller_name or listing.seller_username }}</div>
+            <div class="seller-handle">@{{ listing.seller_username }}</div>
+            {% if listing.seller_faculty %}
+              <div class="seller-meta">{{ listing.seller_faculty }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if listing.rating_count > 0 %}
+          <div class="seller-rating detail-rating">
+            {% for i in range(5) %}
+              {{ '★' if i < listing.rating_avg|int else '☆' }}
+            {% endfor %}
+            <span class="seller-rating-note">({{ listing.rating_count }} đánh giá)</span>
+          </div>
+        {% endif %}
+
+        {% if listing.seller_username != session.get('username') %}
+          {% if listing.seller_phone %}
+            <div class="seller-contact">
+              <a href="tel:{{ listing.seller_phone }}" class="seller-contact-link">{{ listing.seller_phone }}</a>
+            </div>
+          {% endif %}
+          <a href="{{ url_for('chat', lid=listing.id, oid=listing.seller_id) }}"
+             class="btn btn-primary btn-block detail-message-btn">Nhắn tin người bán</a>
+        {% endif %}
+
+        <button class="wishlist-btn btn btn-outline btn-block"
+                data-lid="{{ listing.id }}"
+                style="position:static;width:100%;border-radius:var(--radius-sm);height:auto;padding:9px 20px;font-size:.88rem">
+          {{ 'Đã lưu tin' if in_wishlist else 'Lưu tin' }}
+        </button>
+      </div>
+
+      <div class="detail-status-box">
+        <div class="detail-status-row">
+          <span class="detail-status-label">Trạng thái</span>
+          <span class="badge {{ 'badge-green' if listing.status=='active' else 'badge-gray' }}">
+            {{ 'Đang bán' if listing.status=='active' else listing.status }}
+          </span>
+        </div>
+        {% if listing.listing_type == 'sell' %}
+          <div class="detail-status-row">
+            <span class="detail-status-label">Giá</span>
+            <span class="detail-status-price">
+              {{ '{:,.0f}'.format(listing.price) }}đ
+            </span>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="detail-safety-note">
+        <strong>Lưu ý an toàn:</strong> Hãy gặp mặt trao đổi tại nơi công cộng trong khuôn viên trường. Kiểm tra kỹ sách trước khi thanh toán.
+      </div>
+
+    </div>
+  </div>
+
+  {% if related %}
+    <div class="divider" style="margin:30px 0 20px"></div>
+    <div class="section-header">
+      <div class="section-title">Sách liên quan</div>
+      <a href="{{ url_for('listings') }}" class="btn btn-outline btn-sm">Xem thêm</a>
+    </div>
+    <div class="book-grid">
+      {% for r in related %}
+        <a href="{{ url_for('listing_detail', lid=r.id) }}" class="card book-card">
+          <div class="book-card-cover"><span class="book-card-cover-label">Sách</span></div>
+          <div class="book-card-body">
+            <div class="book-card-title">{{ r.title }}</div>
+            {% if r.listing_type == 'sell' %}
+              <div class="book-card-price">{{ '{:,.0f}'.format(r.price) }}đ</div>
+            {% elif r.listing_type == 'free' %}
+              <div class="book-card-price book-card-free">Miễn phí</div>
+            {% else %}
+              <div class="book-card-price book-card-exchange">Trao đổi</div>
+            {% endif %}
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

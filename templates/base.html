@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}NEU Bookstore{% endblock %} — Sàn Sách ĐH Kinh Tế Quốc Dân</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+<div class="page-wrapper">
+  <header class="site-header">
+    <div class="header-inner">
+      <button class="header-menu-btn" id="menuBtn" title="Mở menu">☰</button>
+      <a href="{{ url_for('home') }}" class="header-logo">
+        <img src="{{ url_for('static', filename='images/neu-logo.png') }}" alt="NEU logo" class="header-logo-mark">
+        <div class="header-logo-text">
+          <span>ĐẠI HỌC KINH TẾ QUỐC DÂN</span>
+          <span class="header-logo-sub">Sàn Giao Dịch Sách &amp; Giáo Trình</span>
+        </div>
+      </a>
+      <form class="header-search" action="{{ url_for('listings') }}" method="GET">
+        <input type="text" name="q" placeholder="Tìm sách, giáo trình, môn học..."
+               value="{{ request.args.get('q','') }}">
+        <button type="submit">Tìm</button>
+      </form>
+      <div class="header-actions">
+        <a href="{{ url_for('messages') }}" class="header-btn" title="Tin nhắn">
+          Tin nhắn
+          {% if unread_count > 0 %}
+            <span class="badge-count">{{ unread_count }}</span>
+          {% endif %}
+        </a>
+        <a href="{{ url_for('post_listing') }}" class="btn-post-header">Đăng tin</a>
+        <div class="header-account">
+          <div class="header-avatar" id="avatarBtn">
+            {{ current_user.full_name[0] if current_user and current_user.full_name else 'U' }}
+          </div>
+          <div class="header-dropdown" id="headerDropdown">
+            {% if current_user %}
+              <div class="user-info">
+                <strong>{{ current_user.full_name or current_user.username }}</strong>
+                <small>{{ current_user.email or '' }}</small>
+              </div>
+              <a href="{{ url_for('profile') }}">Hồ sơ của tôi</a>
+              <a href="{{ url_for('profile') }}#my-listings">Tin đăng của tôi</a>
+              <a href="{{ url_for('profile') }}#wishlist">Yêu thích</a>
+              {% if current_user.role == 'admin' %}
+                <div class="divider"></div>
+                <a href="{{ url_for('admin') }}">Quản trị viên</a>
+              {% endif %}
+              <div class="divider"></div>
+              <form method="POST" action="{{ url_for('logout') }}">
+                <button type="submit">Đăng xuất</button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <span class="logo-text">NEU Bookstore</span>
+      <button class="sidebar-close" id="sidebarClose">✕</button>
+    </div>
+    <div class="sidebar-nav">
+      <div class="sidebar-nav-section">
+        <div class="sidebar-nav-section-title">Điều hướng</div>
+      </div>
+      <a href="{{ url_for('home') }}">Trang chủ</a>
+      <a href="{{ url_for('listings') }}">Tất cả sách</a>
+      <a href="{{ url_for('listings') }}?type=sell">Sách bán</a>
+      <a href="{{ url_for('listings') }}?type=exchange">Trao đổi</a>
+      <a href="{{ url_for('listings') }}?type=free">Sách miễn phí</a>
+      <a href="{{ url_for('post_listing') }}">Đăng tin mới</a>
+      <div class="sidebar-nav-section sidebar-nav-section-spaced">
+        <div class="sidebar-nav-section-title">Danh mục</div>
+      </div>
+
+      {% for cat in root_categories %}
+      <div>
+        <div class="sidebar-cat-btn">
+          <span>{{ cat.name }}</span>
+          <span class="cat-arrow">▼</span>
+        </div>
+        <div class="sidebar-sub-cats">
+          <a href="{{ url_for('listings') }}?cat={{ cat.id }}">Tất cả {{ cat.name }}</a>
+        </div>
+      </div>
+      {% endfor %}
+      <div class="sidebar-nav-section sidebar-nav-section-spaced">
+        <div class="sidebar-nav-section-title">Tài khoản</div>
+      </div>
+      <a href="{{ url_for('profile') }}">Hồ sơ</a>
+      <a href="{{ url_for('messages') }}">
+        Tin nhắn
+        {% if unread_count > 0 %}
+          <span class="badge badge-red sidebar-badge">{{ unread_count }}</span>
+        {% endif %}
+      </a>
+    </div>
+  </nav>
+  <div class="flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="flash flash-{{ category }}">
+          <span>{{ message }}</span>
+          <button class="flash-close">✕</button>
+        </div>
+      {% endfor %}
+    {% endwith %}
+  </div>
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer">
+    <div class="footer-top">
+      <div class="container">
+        <div class="footer-logo-row">
+          <img src="{{ url_for('static', filename='images/neu-logo.png') }}" alt="NEU logo" class="footer-logo-mark">
+        </div>
+        <div class="footer-nav-row">
+          <a href="{{ url_for('home') }}">TRANG CHỦ</a>
+          <a href="https://www.facebook.com/neu.edu.vn" target="_blank">FANPAGE FB</a>
+          <span class="footer-copyright">Copyright © 2025 National Economics University</span>
+          <a href="#">THÔNG BÁO</a>
+          <a href="https://neu.edu.vn" target="_blank">GIỚI THIỆU</a>
+        </div>
+        <div class="footer-info-row">
+          <div class="footer-info-block">
+            <h4>Địa chỉ</h4>
+            <div class="footer-info-item">
+              <span><strong>Trụ sở chính:</strong> 207 Giải Phóng, Phường Bạch Mai, Hà Nội, Việt Nam</span>
+            </div>
+          </div>
+          <div class="footer-info-block">
+            <h4>Liên hệ</h4>
+            <div class="footer-info-item">
+              <span>Email: phqldt@neu.edu.vn</span>
+            </div>
+            <div class="footer-info-item">
+              <span>Hotline: (84)24.36.280.280</span>
+            </div>
+            <div class="footer-info-item">
+              <span>Fax: (84)24.38.695.992</span>
+            </div>
+            <div class="footer-info-item">
+              <span>Mọi đóng góp: ask-cait@neu.edu.vn | dhktqd@neu.edu.vn</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      NEU Bookstore — Sàn giao dịch sách sinh viên Đại học Kinh tế Quốc dân
+    </div>
+  </footer>
+</div>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>
