@@ -16,6 +16,9 @@ Tài khoản mặc định:
 
 import os
 import secrets
+import shutil
+import sqlite3
+import tempfile
 from functools import wraps
 from datetime import datetime, timedelta
 
@@ -111,6 +114,41 @@ def bootstrap_database():
         init_db()
     else:
         ensure_db_schema()
+
+
+def replace_database_file(uploaded_file) -> str:
+    filename = (uploaded_file.filename or "").lower()
+    if not filename.endswith(".db"):
+        raise ValueError("Chi chap nhan file .db")
+
+    database_dir = os.path.dirname(DATABASE)
+    os.makedirs(database_dir, exist_ok=True)
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".db", dir=database_dir) as tmp:
+        uploaded_file.save(tmp.name)
+        temp_path = tmp.name
+
+    try:
+        test_conn = sqlite3.connect(temp_path)
+        tables = {
+            row[0] for row in test_conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        }
+        test_conn.close()
+        required_tables = {"users", "books", "listings", "messages"}
+        if not required_tables.issubset(tables):
+            raise ValueError("File database khong hop le hoac thieu bang can thiet")
+
+        backup_path = f"{DATABASE}.backup-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+        if os.path.exists(DATABASE):
+            shutil.copy2(DATABASE, backup_path)
+        os.replace(temp_path, DATABASE)
+        ensure_db_schema()
+        return backup_path if os.path.exists(backup_path) else ""
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
 
 bootstrap_database()
@@ -1012,6 +1050,31 @@ def dismiss_report(rid):
         "ÄĂ£ bá» qua report." if updated else "KhĂ´ng thá»ƒ cáº­p nháº­t report nĂ y.",
         "info" if updated else "warning",
     )
+    return redirect(url_for("admin"))
+
+
+@app.route("/admin/database/upload", methods=["POST"])
+@login_required
+@admin_required
+def upload_database():
+    uploaded_file = request.files.get("database_file")
+    if not uploaded_file or not uploaded_file.filename:
+        flash("Hay chon file database .db de upload.", "warning")
+        return redirect(url_for("admin"))
+
+    try:
+        backup_path = replace_database_file(uploaded_file)
+    except ValueError as exc:
+        flash(str(exc), "danger")
+        return redirect(url_for("admin"))
+    except Exception:
+        flash("Khong the thay database. Kiem tra file va thu lai.", "danger")
+        return redirect(url_for("admin"))
+
+    if backup_path:
+        flash(f"Da thay database thanh cong. Backup cu: {backup_path}", "success")
+    else:
+        flash("Da thay database thanh cong.", "success")
     return redirect(url_for("admin"))
 
 

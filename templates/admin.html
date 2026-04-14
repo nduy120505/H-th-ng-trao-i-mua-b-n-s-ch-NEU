@@ -81,6 +81,17 @@
     </div>
   </div>
 
+  <div class="panel" style="margin-bottom:24px">
+    <div class="panel-title">Thay Database</div>
+    <div style="font-size:.84rem;color:var(--gray-500);margin-bottom:14px">
+      Upload file <strong>.db</strong> mới để thay database hiện tại trên Railway. Hệ thống sẽ tự backup file cũ trước khi thay và chạy migration cho các tính năng mới.
+    </div>
+    <form method="POST" action="{{ url_for('upload_database') }}" enctype="multipart/form-data" class="database-upload-form">
+      <input type="file" name="database_file" accept=".db,application/octet-stream" class="form-control" required>
+      <button type="submit" class="btn btn-primary">Upload và thay database</button>
+    </form>
+  </div>
+
   <div class="admin-grid">
     <div class="admin-stack">
       <div class="panel">

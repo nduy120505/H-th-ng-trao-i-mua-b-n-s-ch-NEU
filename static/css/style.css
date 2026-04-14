@@ -856,6 +856,15 @@ tr:hover td     { background: var(--gray-50); }
 .moderation-note-input {
   min-width: 220px;
 }
+.database-upload-form {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.database-upload-form .form-control {
+  max-width: 420px;
+}
 .detail-status-box {
   background: var(--gray-50);
   border-radius: var(--radius-md);
