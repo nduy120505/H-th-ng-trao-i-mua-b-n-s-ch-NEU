@@ -504,6 +504,7 @@ def post_listing():
 
     if request.method == "POST":
         book_id     = request.form.get("book_id", "").strip()
+        is_new_book = book_id == "__new__"
         ltype       = request.form.get("listing_type", "").strip()
         price       = request.form.get("price", "0").strip()
         condition   = request.form.get("condition", "").strip()
@@ -517,7 +518,7 @@ def post_listing():
         new_subject = request.form.get("new_subject", "").strip()
         new_year    = request.form.get("new_year", "").strip()
 
-        if not book_id and not new_title:
+        if (not book_id or is_new_book) and not new_title:
             errors["book"] = "Chọn sách hoặc nhập tên sách mới"
         if not ltype:
             errors["listing_type"] = "Chọn loại tin"
@@ -527,6 +528,9 @@ def post_listing():
             errors["price"] = "Nhập giá hợp lệ"
 
         if not errors:
+            if is_new_book:
+                book_id = ""
+
             if not book_id and new_title:
                 cur = conn.execute(
                     "INSERT INTO books(title,author,category_id,subject_code,course_year,cover_image) "
