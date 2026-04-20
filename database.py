@@ -132,7 +132,8 @@ CREATE TABLE IF NOT EXISTS reviews (
     listing_id  INTEGER REFERENCES listings(id) ON DELETE CASCADE,
     rating      INTEGER CHECK(rating BETWEEN 1 AND 5),
     comment     TEXT,
-    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(reviewer_id, listing_id)
 );
 
 CREATE TABLE IF NOT EXISTS user_reports (
@@ -148,6 +149,23 @@ CREATE TABLE IF NOT EXISTS user_reports (
     resolved_by      INTEGER REFERENCES users(id) ON DELETE SET NULL,
     resolved_at      TIMESTAMP,
     created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS wanted_books (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id     INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    query       TEXT NOT NULL,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS alert_notifications (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id        INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    wanted_book_id INTEGER REFERENCES wanted_books(id) ON DELETE CASCADE,
+    listing_id     INTEGER REFERENCES listings(id) ON DELETE CASCADE,
+    is_seen        INTEGER DEFAULT 0,
+    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(wanted_book_id, listing_id)
 );
 """
 
@@ -312,6 +330,29 @@ def ensure_db_schema(conn: sqlite3.Connection | None = None) -> None:
             resolved_at      TIMESTAMP,
             created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS wanted_books (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id     INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            query       TEXT NOT NULL,
+            created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS alert_notifications (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id        INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            wanted_book_id INTEGER REFERENCES wanted_books(id) ON DELETE CASCADE,
+            listing_id     INTEGER REFERENCES listings(id) ON DELETE CASCADE,
+            is_seen        INTEGER DEFAULT 0,
+            created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(wanted_book_id, listing_id)
+        )
+    """)
+    cur.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_reviews_unique_reviewer_listing
+        ON reviews(reviewer_id, listing_id)
     """)
     report_cols = {
         row["name"] for row in cur.execute("PRAGMA table_info(user_reports)").fetchall()

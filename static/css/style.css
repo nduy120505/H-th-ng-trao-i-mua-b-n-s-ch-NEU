@@ -937,6 +937,141 @@ tr:hover td     { background: var(--gray-50); }
 .divider          { height: 1px; background: var(--gray-200); margin: 16px 0; }
 .w-100            { width: 100%; }
 
+.header-quicknav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.header-quicklink {
+  color: rgba(255,255,255,.88);
+  font-size: .8rem;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.08);
+}
+.header-quicklink:hover {
+  color: var(--white);
+  background: rgba(255,255,255,.18);
+}
+.header-quicklink.active {
+  color: var(--white);
+  background: rgba(255,255,255,.22);
+}
+.seller-name-link {
+  color: var(--gray-900);
+  font-weight: 700;
+}
+.seller-reputation-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 14px 0;
+}
+.seller-reputation-item {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  text-align: center;
+}
+.seller-reputation-item strong {
+  display: block;
+  color: var(--gray-900);
+  font-size: 1rem;
+}
+.seller-reputation-item span {
+  font-size: .72rem;
+  color: var(--gray-500);
+}
+.trust-score {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #d97706;
+}
+.review-list {
+  display: grid;
+  gap: 12px;
+}
+.review-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--gray-200);
+}
+.review-item:last-child {
+  border-bottom: none;
+}
+.review-stars {
+  min-width: 58px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: #fff3cd;
+  color: #856404;
+  text-align: center;
+  font-weight: 700;
+  font-size: .8rem;
+}
+.review-author {
+  font-weight: 700;
+  color: var(--gray-800);
+}
+.review-book {
+  color: var(--gray-500);
+  font-weight: 500;
+}
+.review-comment {
+  margin-top: 4px;
+  color: var(--gray-600);
+  line-height: 1.5;
+  font-size: .84rem;
+}
+.profile-reputation-card {
+  margin-bottom: 14px;
+}
+.alert-create-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+}
+.profile-alert-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 18px;
+}
+.watch-list {
+  display: grid;
+  gap: 12px;
+}
+.watch-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  background: var(--gray-50);
+}
+.watch-item-link:hover {
+  border-color: rgba(0,82,140,.25);
+  background: #f4f9fc;
+}
+.watch-query {
+  font-weight: 700;
+  color: var(--gray-900);
+}
+.watch-date {
+  font-size: .78rem;
+  color: var(--gray-500);
+  margin-top: 4px;
+}
+.empty-state-compact {
+  margin-bottom: 0;
+  padding: 20px;
+}
+
 
 
 @media (max-width: 1024px) {
@@ -945,6 +1080,8 @@ tr:hover td     { background: var(--gray-50); }
   .detail-layout   { grid-template-columns: 1fr; }
   .admin-grid      { grid-template-columns: 1fr; }
   .report-grid     { grid-template-columns: 1fr 1fr; }
+  .header-quicknav { display: none; }
+  .profile-alert-layout { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 768px) {
@@ -955,6 +1092,7 @@ tr:hover td     { background: var(--gray-50); }
   .filter-sidebar   { display: none; }
   .profile-layout   { grid-template-columns: 1fr; }
   .header-search    { display: none; }
+  .header-quicknav  { display: none; }
   .stats-grid       { grid-template-columns: repeat(2, 1fr); }
   .form-row-2,
   .form-row-3       { grid-template-columns: 1fr; }
@@ -962,6 +1100,8 @@ tr:hover td     { background: var(--gray-50); }
   .footer-info-row  { grid-template-columns: 1fr; }
   .detail-layout    { grid-template-columns: 1fr; }
   .report-grid      { grid-template-columns: 1fr; }
+  .alert-create-form { grid-template-columns: 1fr; }
+  .seller-reputation-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 480px) {

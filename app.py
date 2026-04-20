@@ -147,6 +147,82 @@ def serialize_message(row, current_user_id):
     }
 
 
+def recalculate_user_rating(conn, user_id):
+    summary = conn.execute(
+        """
+        SELECT COALESCE(AVG(rating), 0) avg_rating, COUNT(*) total_reviews
+        FROM reviews
+        WHERE reviewed_id=?
+        """,
+        (user_id,),
+    ).fetchone()
+    conn.execute(
+        "UPDATE users SET rating_avg=?, rating_count=? WHERE id=?",
+        (summary["avg_rating"], summary["total_reviews"], user_id),
+    )
+
+
+def get_reputation_summary(conn, user_id):
+    summary = conn.execute(
+        """
+        SELECT
+            COALESCE(AVG(r.rating), 0) AS rating_avg,
+            COUNT(r.id) AS rating_count,
+            COUNT(DISTINCT CASE WHEN l.status='active' THEN l.id END) AS active_listings,
+            COUNT(DISTINCT CASE WHEN l.status IN ('sold', 'reserved', 'closed') THEN l.id END) AS completed_listings,
+            COUNT(DISTINCT CASE WHEN ur.status='pending' THEN ur.id END) AS pending_reports,
+            COUNT(DISTINCT CASE WHEN ur.status='reviewed' THEN ur.id END) AS reviewed_reports
+        FROM users u
+        LEFT JOIN reviews r ON r.reviewed_id=u.id
+        LEFT JOIN listings l ON l.seller_id=u.id
+        LEFT JOIN user_reports ur ON ur.reported_user_id=u.id
+        WHERE u.id=?
+        GROUP BY u.id
+        """,
+        (user_id,),
+    ).fetchone()
+    return summary
+
+
+def create_alerts_for_listing(conn, listing_id):
+    listing = conn.execute(
+        """
+        SELECT l.id, b.title, b.author, b.subject_code, l.notes
+        FROM listings l
+        JOIN books b ON b.id=l.book_id
+        WHERE l.id=? AND l.status='active'
+        """,
+        (listing_id,),
+    ).fetchone()
+    if not listing:
+        return 0
+
+    searchable_text = " ".join(
+        str(listing[key] or "").lower()
+        for key in ("title", "author", "subject_code", "notes")
+    )
+    if not searchable_text.strip():
+        return 0
+
+    watches = conn.execute(
+        "SELECT id, user_id, query FROM wanted_books ORDER BY created_at DESC"
+    ).fetchall()
+    created = 0
+    for watch in watches:
+        query = (watch["query"] or "").strip().lower()
+        if not query or query not in searchable_text:
+            continue
+        inserted = conn.execute(
+            """
+            INSERT OR IGNORE INTO alert_notifications(user_id, wanted_book_id, listing_id)
+            VALUES (?, ?, ?)
+            """,
+            (watch["user_id"], watch["id"], listing_id),
+        ).rowcount
+        created += inserted
+    return created
+
+
 def bootstrap_database():
     if not os.path.exists(DATABASE):
         init_db()
@@ -231,17 +307,24 @@ def inject_globals():
         "SELECT * FROM categories WHERE parent_id IS NULL ORDER BY sort_order"
     ).fetchall()
     unread = 0
+    alert_count = 0
     if "user_id" in session:
         row = conn.execute(
             "SELECT COUNT(*) c FROM messages WHERE receiver_id=? AND is_read=0",
             (session["user_id"],),
         ).fetchone()
         unread = row["c"] if row else 0
+        alert_row = conn.execute(
+            "SELECT COUNT(*) c FROM alert_notifications WHERE user_id=? AND is_seen=0",
+            (session["user_id"],),
+        ).fetchone()
+        alert_count = alert_row["c"] if alert_row else 0
     conn.close()
     return dict(
         current_user=get_current_user(),
         root_categories=root_cats,
         unread_count=unread,
+        alert_count=alert_count,
         CONDITION_LABELS=CONDITION_LABELS,
         TYPE_LABELS=TYPE_LABELS,
         REPORT_REASONS=REPORT_REASONS,
@@ -509,6 +592,7 @@ def listings():
 @login_required
 def listing_detail(lid):
     conn = get_db_connection()
+    current_user_id = session["user_id"]
     listing = conn.execute("""
         SELECT l.*, b.title, b.author, b.isbn, b.publisher, b.publish_year,
                b.edition, b.description book_desc, b.cover_emoji, b.cover_image,
@@ -529,7 +613,7 @@ def listing_detail(lid):
         flash("Tin đăng không tồn tại.", "danger")
         return redirect(url_for("listings"))
 
-    if not can_view_listing(listing, session["user_id"], session.get("role")):
+    if not can_view_listing(listing, current_user_id, session.get("role")):
         conn.close()
         flash("Tin đăng này đang chờ duyệt hoặc không còn hiển thị công khai.", "warning")
         return redirect(url_for("profile"))
@@ -550,8 +634,20 @@ def listing_detail(lid):
 
     wl = conn.execute(
         "SELECT id FROM wishlist WHERE user_id=? AND listing_id=?",
-        (session["user_id"], lid),
+        (current_user_id, lid),
     ).fetchone()
+    seller_summary = get_reputation_summary(conn, listing["seller_id"])
+    recent_reviews = conn.execute(
+        """
+        SELECT r.*, reviewer.full_name reviewer_name, reviewer.username reviewer_username
+        FROM reviews r
+        JOIN users reviewer ON reviewer.id=r.reviewer_id
+        WHERE r.reviewed_id=?
+        ORDER BY r.created_at DESC
+        LIMIT 3
+        """,
+        (listing["seller_id"],),
+    ).fetchall()
     conn.close()
 
     return render_template(
@@ -559,6 +655,8 @@ def listing_detail(lid):
         listing=listing,
         related=related,
         in_wishlist=bool(wl),
+        seller_summary=seller_summary,
+        recent_reviews=recent_reviews,
     )
 
 
@@ -937,21 +1035,140 @@ def send_chat_message_api(lid, oid):
 # Profile
 # ─────────────────────────────────────────────────────────────────────────────
 
+@app.route("/seller/<int:user_id>")
+@login_required
+def seller_profile(user_id):
+    conn = get_db_connection()
+    seller = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+    if not seller:
+        conn.close()
+        flash("Khong tim thay nguoi ban.", "warning")
+        return redirect(url_for("listings"))
+
+    reputation = get_reputation_summary(conn, user_id)
+    listings = conn.execute(
+        """
+        SELECT l.*, b.title, b.author, b.cover_image, b.subject_code
+        FROM listings l
+        JOIN books b ON b.id=l.book_id
+        WHERE l.seller_id=? AND l.status='active'
+        ORDER BY l.created_at DESC
+        LIMIT 12
+        """,
+        (user_id,),
+    ).fetchall()
+    reviews = conn.execute(
+        """
+        SELECT r.*, reviewer.full_name reviewer_name, reviewer.username reviewer_username,
+               b.title listing_title
+        FROM reviews r
+        JOIN users reviewer ON reviewer.id=r.reviewer_id
+        JOIN listings l ON l.id=r.listing_id
+        JOIN books b ON b.id=l.book_id
+        WHERE r.reviewed_id=?
+        ORDER BY r.created_at DESC
+        LIMIT 20
+        """,
+        (user_id,),
+    ).fetchall()
+    reviewable_listings = conn.execute(
+        """
+        SELECT DISTINCT l.id, b.title
+        FROM messages m
+        JOIN listings l ON l.id=m.listing_id
+        JOIN books b ON b.id=l.book_id
+        LEFT JOIN reviews r
+            ON r.listing_id=l.id AND r.reviewer_id=?
+        WHERE l.seller_id=?
+          AND ? != l.seller_id
+          AND (m.sender_id=? OR m.receiver_id=?)
+          AND r.id IS NULL
+        ORDER BY l.created_at DESC
+        """,
+        (session["user_id"], user_id, session["user_id"], session["user_id"], session["user_id"]),
+    ).fetchall()
+    conn.close()
+    return render_template(
+        "seller_profile.html",
+        seller=seller,
+        reputation=reputation,
+        listings=listings,
+        reviews=reviews,
+        reviewable_listings=reviewable_listings,
+    )
+
+
+@app.route("/seller/<int:user_id>/review", methods=["POST"])
+@login_required
+def submit_seller_review(user_id):
+    conn = get_db_connection()
+    seller = conn.execute("SELECT id FROM users WHERE id=?", (user_id,)).fetchone()
+    if not seller:
+        conn.close()
+        flash("Khong tim thay nguoi ban.", "warning")
+        return redirect(url_for("listings"))
+    if user_id == session["user_id"]:
+        conn.close()
+        flash("Ban khong the tu danh gia chinh minh.", "warning")
+        return redirect(url_for("seller_profile", user_id=user_id))
+
+    listing_id = request.form.get("listing_id", "").strip()
+    rating = request.form.get("rating", "").strip()
+    comment = request.form.get("comment", "").strip()
+    if not listing_id.isdigit() or not rating.isdigit():
+        conn.close()
+        flash("Thong tin danh gia khong hop le.", "warning")
+        return redirect(url_for("seller_profile", user_id=user_id))
+
+    eligible = conn.execute(
+        """
+        SELECT l.id
+        FROM listings l
+        JOIN messages m ON m.listing_id=l.id
+        LEFT JOIN reviews r
+            ON r.listing_id=l.id AND r.reviewer_id=?
+        WHERE l.id=? AND l.seller_id=? AND r.id IS NULL
+          AND (m.sender_id=? OR m.receiver_id=?)
+        LIMIT 1
+        """,
+        (session["user_id"], int(listing_id), user_id, session["user_id"], session["user_id"]),
+    ).fetchone()
+    stars = int(rating)
+    if not eligible or stars < 1 or stars > 5:
+        conn.close()
+        flash("Ban chua du dieu kien de danh gia giao dich nay.", "warning")
+        return redirect(url_for("seller_profile", user_id=user_id))
+
+    conn.execute(
+        """
+        INSERT INTO reviews(reviewer_id, reviewed_id, listing_id, rating, comment)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (session["user_id"], user_id, int(listing_id), stars, comment or None),
+    )
+    recalculate_user_rating(conn, user_id)
+    conn.commit()
+    conn.close()
+    flash("Da gui danh gia cho nguoi ban.", "success")
+    return redirect(url_for("seller_profile", user_id=user_id))
+
+
 @app.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
     conn   = get_db_connection()
-    user   = conn.execute("SELECT * FROM users WHERE id=?", (session["user_id"],)).fetchone()
+    user_id = session["user_id"]
+    user   = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
     errors = {}
 
     if request.method == "POST":
         fn = request.form.get("full_name", "").strip()
         em = request.form.get("email", "").strip()
-        ph = request.form.get("phone", "").strip()
-        si = request.form.get("student_id", "").strip()
-        fa = request.form.get("faculty", "").strip()
-        cy = request.form.get("course_year", "").strip()
-        bi = request.form.get("bio", "").strip()
+        ph = request.form.get("phone", user["phone"] or "").strip()
+        si = request.form.get("student_id", user["student_id"] or "").strip()
+        fa = request.form.get("faculty", user["faculty"] or "").strip()
+        cy = request.form.get("course_year", str(user["course_year"] or "")).strip()
+        bi = request.form.get("bio", user["bio"] or "").strip()
         np = request.form.get("new_password", "").strip()
         cp = request.form.get("current_password", "").strip()
 
@@ -972,7 +1189,7 @@ def profile():
                 "faculty=?,course_year=?,bio=?,password_hash=? WHERE id=?",
                 (fn, em, ph or None, si or None, fa or None,
                  int(cy) if cy.isdigit() else None,
-                 bi or None, phash, session["user_id"]),
+                 bi or None, phash, user_id),
             )
             conn.commit()
             flash("Cập nhật thành công!", "success")
@@ -981,7 +1198,7 @@ def profile():
     my_listings = conn.execute(
         "SELECT l.*, b.title, b.cover_emoji, b.cover_image FROM listings l "
         "JOIN books b ON b.id=l.book_id WHERE l.seller_id=? ORDER BY l.created_at DESC",
-        (session["user_id"],),
+        (user_id,),
     ).fetchall()
     wishlist = conn.execute(
         "SELECT l.*, b.title, b.cover_emoji, b.cover_image, u.full_name seller_name "
@@ -990,8 +1207,31 @@ def profile():
         "JOIN books b ON b.id=l.book_id "
         "JOIN users u ON u.id=l.seller_id "
         "WHERE w.user_id=? AND l.status='active' ORDER BY w.created_at DESC",
-        (session["user_id"],),
+        (user_id,),
     ).fetchall()
+    wanted_books = conn.execute(
+        "SELECT * FROM wanted_books WHERE user_id=? ORDER BY created_at DESC",
+        (user_id,),
+    ).fetchall()
+    alert_notifications = conn.execute(
+        """
+        SELECT a.*, wb.query, b.title, l.listing_type, l.price
+        FROM alert_notifications a
+        JOIN wanted_books wb ON wb.id=a.wanted_book_id
+        JOIN listings l ON l.id=a.listing_id
+        JOIN books b ON b.id=l.book_id
+        WHERE a.user_id=?
+        ORDER BY a.created_at DESC
+        LIMIT 20
+        """,
+        (user_id,),
+    ).fetchall()
+    reputation = get_reputation_summary(conn, user_id)
+    conn.execute(
+        "UPDATE alert_notifications SET is_seen=1 WHERE user_id=? AND is_seen=0",
+        (user_id,),
+    )
+    conn.commit()
     conn.close()
 
     return render_template(
@@ -999,9 +1239,69 @@ def profile():
         user=user,
         my_listings=my_listings,
         wishlist=wishlist,
+        wanted_books=wanted_books,
+        alert_notifications=alert_notifications,
+        reputation=reputation,
         errors=errors,
         FACULTIES=FACULTIES,
     )
+
+
+@app.route("/wanted-books", methods=["POST"])
+@login_required
+def create_wanted_book():
+    query = request.form.get("query", "").strip()
+    if not query:
+        flash("Hay nhap ten sach ban can theo doi.", "warning")
+        return redirect(url_for("profile") + "#wanted-books")
+
+    conn = get_db_connection()
+    conn.execute(
+        "INSERT INTO wanted_books(user_id, query) VALUES (?, ?)",
+        (session["user_id"], query),
+    )
+    wanted_book_id = conn.execute("SELECT last_insert_rowid() id").fetchone()["id"]
+    active_matches = conn.execute(
+        """
+        SELECT l.id
+        FROM listings l
+        JOIN books b ON b.id=l.book_id
+        WHERE l.status='active'
+          AND (
+              lower(b.title) LIKE ? OR
+              lower(COALESCE(b.author, '')) LIKE ? OR
+              lower(COALESCE(b.subject_code, '')) LIKE ? OR
+              lower(COALESCE(l.notes, '')) LIKE ?
+          )
+        """,
+        tuple([f"%{query.lower()}%"] * 4),
+    ).fetchall()
+    for row in active_matches:
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO alert_notifications(user_id, wanted_book_id, listing_id)
+            VALUES (?, ?, ?)
+            """,
+            (session["user_id"], wanted_book_id, row["id"]),
+        )
+    conn.commit()
+    conn.close()
+    flash("Da bat theo doi sach mong muon.", "success")
+    return redirect(url_for("profile") + "#wanted-books")
+
+
+@app.route("/wanted-books/<int:wanted_book_id>/delete", methods=["POST"])
+@login_required
+def delete_wanted_book(wanted_book_id):
+    conn = get_db_connection()
+    conn.execute(
+        "DELETE FROM wanted_books WHERE id=? AND user_id=?",
+        (wanted_book_id, session["user_id"]),
+    )
+    conn.commit()
+    conn.close()
+    flash("Da xoa muc theo doi sach.", "info")
+    return redirect(url_for("profile") + "#wanted-books")
 
 
 @app.route("/listing/<int:lid>/close", methods=["POST"])
@@ -1135,6 +1435,8 @@ def approve_listing(lid):
         """,
         (session["user_id"], lid),
     ).rowcount
+    if updated:
+        create_alerts_for_listing(conn, lid)
     conn.commit()
     conn.close()
     flash(

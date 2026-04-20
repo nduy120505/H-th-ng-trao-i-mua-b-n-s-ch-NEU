@@ -3,7 +3,6 @@
 
 {% block content %}
 <div class="container">
-
   <div class="breadcrumb">
     <a href="{{ url_for('home') }}">Trang chủ</a>
     <span class="breadcrumb-sep">›</span>
@@ -11,64 +10,59 @@
   </div>
 
   <div class="profile-layout">
-
     <div>
       <div class="profile-card">
-        <div class="profile-avatar-big">
-          {{ user.full_name[0] if user.full_name else 'U' }}
-        </div>
-        <div style="font-size:1.05rem;font-weight:700;margin-bottom:4px">
-          {{ user.full_name or user.username }}
-        </div>
-        <div style="font-size:.8rem;color:var(--gray-500);margin-bottom:12px">
-          @{{ user.username }}
+        <div class="profile-avatar-big">{{ user.full_name[0] if user.full_name else 'U' }}</div>
+        <div style="font-size:1.05rem;font-weight:700;margin-bottom:4px">{{ user.full_name or user.username }}</div>
+        <div style="font-size:.8rem;color:var(--gray-500);margin-bottom:12px">@{{ user.username }}</div>
+        <div class="profile-reputation-card">
+          <div class="trust-score">{{ '%.1f'|format(reputation.rating_avg or 0) }}/5</div>
+          <div class="seller-rating-note">{{ reputation.rating_count or 0 }} đánh giá uy tín</div>
+          <div class="seller-reputation-grid">
+            <div class="seller-reputation-item">
+              <strong>{{ reputation.completed_listings or 0 }}</strong>
+              <span>Giao dịch</span>
+            </div>
+            <div class="seller-reputation-item">
+              <strong>{{ reputation.active_listings or 0 }}</strong>
+              <span>Tin active</span>
+            </div>
+            <div class="seller-reputation-item">
+              <strong>{{ reputation.pending_reports or 0 }}</strong>
+              <span>Report mở</span>
+            </div>
+          </div>
         </div>
         {% if user.faculty %}
           <div class="badge badge-blue" style="margin-bottom:8px">{{ user.faculty }}</div>
         {% endif %}
         {% if user.course_year %}
-          <div style="font-size:.8rem;color:var(--gray-500)">
-            Năm {{ user.course_year }} · Khóa {{ user.course_year }}
-          </div>
+          <div style="font-size:.8rem;color:var(--gray-500)">Năm {{ user.course_year }} · Khóa {{ user.course_year }}</div>
         {% endif %}
         {% if user.student_id %}
-          <div style="font-size:.8rem;color:var(--gray-400);margin-top:4px">
-            MSSV: {{ user.student_id }}
-          </div>
+          <div style="font-size:.8rem;color:var(--gray-400);margin-top:4px">MSSV: {{ user.student_id }}</div>
         {% endif %}
         {% if user.bio %}
-          <div style="font-size:.82rem;color:var(--gray-600);margin-top:12px;
-                      text-align:left;line-height:1.5;padding:10px;
-                      background:var(--gray-50);border-radius:var(--radius-sm)">
+          <div style="font-size:.82rem;color:var(--gray-600);margin-top:12px;text-align:left;line-height:1.5;padding:10px;background:var(--gray-50);border-radius:var(--radius-sm)">
             {{ user.bio }}
           </div>
         {% endif %}
         <div class="divider"></div>
-        <div style="font-size:.78rem;color:var(--gray-500)">
-          Tham gia: {{ user.created_at[:10] }}
-        </div>
+        <div style="font-size:.78rem;color:var(--gray-500)">Tham gia: {{ user.created_at[:10] }}</div>
       </div>
 
       <div class="panel" style="margin-top:16px">
-        <a href="{{ url_for('post_listing') }}" class="btn btn-primary btn-block">
-          Đăng tin mới
-        </a>
-        <a href="{{ url_for('messages') }}" class="btn btn-outline btn-block"
-           style="margin-top:10px">
-          Tin nhắn của tôi
-        </a>
+        <a href="{{ url_for('post_listing') }}" class="btn btn-primary btn-block">Đăng tin mới</a>
+        <a href="{{ url_for('messages') }}" class="btn btn-outline btn-block" style="margin-top:10px">Tin nhắn của tôi</a>
       </div>
     </div>
 
     <div>
       <div class="profile-tab-nav">
         <button class="profile-tab active" data-tab="tab-info">Thông tin</button>
-        <button class="profile-tab" data-tab="tab-listings" id="my-listings">
-          Tin đăng ({{ my_listings|length }})
-        </button>
-        <button class="profile-tab" data-tab="tab-wishlist" id="wishlist">
-          Yêu thích ({{ wishlist|length }})
-        </button>
+        <button class="profile-tab" data-tab="tab-listings" id="my-listings">Tin đăng ({{ my_listings|length }})</button>
+        <button class="profile-tab" data-tab="tab-wishlist" id="wishlist">Yêu thích ({{ wishlist|length }})</button>
+        <button class="profile-tab" data-tab="tab-alerts" id="wanted-books">Auto Alert ({{ wanted_books|length }})</button>
         <button class="profile-tab" data-tab="tab-security">Bảo mật</button>
       </div>
 
@@ -79,33 +73,23 @@
             <div class="form-row-2">
               <div class="form-group">
                 <label class="form-label">Họ và tên *</label>
-                <input type="text" name="full_name"
-                       class="form-control {{ 'error' if errors.full_name }}"
-                       value="{{ user.full_name or '' }}">
-                {% if errors.full_name %}
-                  <span class="form-error">{{ errors.full_name }}</span>
-                {% endif %}
+                <input type="text" name="full_name" class="form-control {{ 'error' if errors.full_name }}" value="{{ user.full_name or '' }}">
+                {% if errors.full_name %}<span class="form-error">{{ errors.full_name }}</span>{% endif %}
               </div>
               <div class="form-group">
                 <label class="form-label">Mã sinh viên</label>
-                <input type="text" name="student_id" class="form-control"
-                       value="{{ user.student_id or '' }}" placeholder="SV2022001">
+                <input type="text" name="student_id" class="form-control" value="{{ user.student_id or '' }}" placeholder="SV2022001">
               </div>
             </div>
             <div class="form-row-2">
               <div class="form-group">
                 <label class="form-label">Email *</label>
-                <input type="email" name="email"
-                       class="form-control {{ 'error' if errors.email }}"
-                       value="{{ user.email or '' }}">
-                {% if errors.email %}
-                  <span class="form-error">{{ errors.email }}</span>
-                {% endif %}
+                <input type="email" name="email" class="form-control {{ 'error' if errors.email }}" value="{{ user.email or '' }}">
+                {% if errors.email %}<span class="form-error">{{ errors.email }}</span>{% endif %}
               </div>
               <div class="form-group">
                 <label class="form-label">Số điện thoại</label>
-                <input type="text" name="phone" class="form-control"
-                       value="{{ user.phone or '' }}" placeholder="09xxxxxxxx">
+                <input type="text" name="phone" class="form-control" value="{{ user.phone or '' }}" placeholder="09xxxxxxxx">
               </div>
             </div>
             <div class="form-row-2">
@@ -122,7 +106,7 @@
                 <label class="form-label">Năm nhập học</label>
                 <select name="course_year" class="form-control">
                   <option value="">— Chọn năm —</option>
-                  {% for y in range(2025,2018,-1) %}
+                  {% for y in range(2026,2018,-1) %}
                     <option value="{{ y }}" {{ 'selected' if user.course_year==y }}>{{ y }}</option>
                   {% endfor %}
                 </select>
@@ -130,8 +114,7 @@
             </div>
             <div class="form-group">
               <label class="form-label">Giới thiệu bản thân</label>
-              <textarea name="bio" class="form-control" rows="3"
-                        placeholder="Viết vài dòng về bản thân...">{{ user.bio or '' }}</textarea>
+              <textarea name="bio" class="form-control" rows="3" placeholder="Viết vài dòng về bản thân...">{{ user.bio or '' }}</textarea>
             </div>
             <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
           </form>
@@ -164,17 +147,13 @@
                         {% endif %}
                         <div>
                           <div style="font-weight:600;font-size:.88rem">{{ l.title }}</div>
-                          <div style="font-size:.75rem;color:var(--gray-500)">
-                            #{{ l.id }}
-                          </div>
+                          <div style="font-size:.75rem;color:var(--gray-500)">#{{ l.id }}</div>
                         </div>
                       </div>
                     </td>
                     <td>
                       {% set type_info = TYPE_LABELS.get(l.listing_type,('','')) %}
-                      <span class="badge {{ 'badge-red' if l.listing_type=='sell' else ('badge-blue' if l.listing_type=='exchange' else 'badge-green') }}">
-                        {{ type_info[0] }}
-                      </span>
+                      <span class="badge {{ 'badge-red' if l.listing_type=='sell' else ('badge-blue' if l.listing_type=='exchange' else 'badge-green') }}">{{ type_info[0] }}</span>
                     </td>
                     <td>
                       {% if l.listing_type == 'sell' %}
@@ -187,48 +166,27 @@
                     </td>
                     <td>
                       {% set status_info = LISTING_STATUS_META.get(l.status, (l.status, 'badge-gray')) %}
-                      <span class="badge {{ status_info[1] }}">
-                        {{ status_info[0] }}
-                      </span>
+                      <span class="badge {{ status_info[1] }}">{{ status_info[0] }}</span>
                       {% if l.status == 'rejected' and l.moderation_note %}
-                        <div style="font-size:.74rem;color:var(--neu-red);margin-top:4px">
-                          {{ l.moderation_note }}
-                        </div>
+                        <div style="font-size:.74rem;color:var(--neu-red);margin-top:4px">{{ l.moderation_note }}</div>
                       {% endif %}
                     </td>
-                    <td style="font-size:.8rem;color:var(--gray-500)">
-                      {{ l.created_at[:10] }}
-                    </td>
+                    <td style="font-size:.8rem;color:var(--gray-500)">{{ l.created_at[:10] }}</td>
                     <td>
-                      <div style="display:flex;gap:6px">
-                        {% if l.status in ('active', 'pending', 'rejected', 'sold', 'reserved', 'closed') or current_user.role == 'admin' %}
-                          <a href="{{ url_for('listing_detail', lid=l.id) }}"
-                             class="btn btn-ghost btn-sm">Xem</a>
-                        {% endif %}
-                        <a href="{{ url_for('edit_listing', lid=l.id) }}"
-                           class="btn btn-outline btn-sm">Sửa</a>
+                      <div style="display:flex;gap:6px;flex-wrap:wrap">
+                        <a href="{{ url_for('listing_detail', lid=l.id) }}" class="btn btn-ghost btn-sm">Xem</a>
+                        <a href="{{ url_for('edit_listing', lid=l.id) }}" class="btn btn-outline btn-sm">Sửa</a>
                         {% if l.status == 'active' %}
-                          <form method="POST" action="{{ url_for('close_listing', lid=l.id) }}"
-                                style="margin:0"
-                                onsubmit="return confirm('Đóng tin đăng này?')">
+                          <form method="POST" action="{{ url_for('close_listing', lid=l.id) }}" style="margin:0" onsubmit="return confirm('Đóng tin đăng này?')">
                             <button type="submit" class="btn btn-outline btn-sm">Đóng</button>
                           </form>
                         {% endif %}
-                        {% if l.status == 'rejected' %}
-                          <a href="{{ url_for('post_listing') }}" class="btn btn-outline btn-sm">Đăng lại</a>
-                        {% endif %}
-                        <form method="POST" action="{{ url_for('delete_listing', lid=l.id) }}"
-                              style="margin:0"
-                              onsubmit="return confirm('Xóa vĩnh viễn tin đăng này?')">
+                        <form method="POST" action="{{ url_for('delete_listing', lid=l.id) }}" style="margin:0" onsubmit="return confirm('Xóa vĩnh viễn tin đăng này?')">
                           <button type="submit" class="btn btn-danger btn-sm">Xóa</button>
                         </form>
                       </div>
-                      <form method="POST" action="{{ url_for('update_listing_cover_image', lid=l.id) }}"
-                            style="margin-top:8px;display:flex;gap:8px;align-items:center">
-                        <input type="url" name="cover_image" class="form-control"
-                               value="{{ l.cover_image or '' }}"
-                               placeholder="URL ảnh bìa sách"
-                               style="min-width:220px">
+                      <form method="POST" action="{{ url_for('update_listing_cover_image', lid=l.id) }}" style="margin-top:8px;display:flex;gap:8px;align-items:center">
+                        <input type="url" name="cover_image" class="form-control" value="{{ l.cover_image or '' }}" placeholder="URL ảnh bìa sách" style="min-width:220px">
                         <button type="submit" class="btn btn-outline btn-sm">Lưu ảnh</button>
                       </form>
                     </td>
@@ -259,9 +217,7 @@
                 </div>
                 <div class="book-card-body">
                   <div class="book-card-title">{{ l.title }}</div>
-                  <div style="font-size:.75rem;color:var(--gray-500)">
-                    {{ l.seller_name }}
-                  </div>
+                  <div style="font-size:.75rem;color:var(--gray-500)">{{ l.seller_name }}</div>
                   {% if l.listing_type == 'sell' %}
                     <div class="book-card-price">{{ '{:,.0f}'.format(l.price) }}đ</div>
                   {% elif l.listing_type == 'free' %}
@@ -276,56 +232,110 @@
         {% else %}
           <div class="empty-state">
             <h3>Chưa có sách yêu thích</h3>
-            <p>Nhấn lưu trên bất kỳ tin đăng nào để lưu vào đây</p>
+            <p>Nhấn lưu trên bất kỳ tin đăng nào để xem lại tại đây.</p>
           </div>
         {% endif %}
+      </div>
+
+      <div class="profile-tab-content" id="tab-alerts">
+        <div class="panel">
+          <div class="panel-title">Theo dõi sách mong muốn (Auto Alert)</div>
+          <p class="form-hint" style="margin-bottom:16px">Bạn nhập “Tôi cần sách X”, khi có tin phù hợp được duyệt, hệ thống sẽ đưa vào danh sách cảnh báo.</p>
+          <form method="POST" action="{{ url_for('create_wanted_book') }}" class="alert-create-form">
+            <input type="text" name="query" class="form-control" placeholder="Ví dụ: Giáo trình Kinh tế vi mô, MATH101, Marketing căn bản">
+            <button type="submit" class="btn btn-primary">Theo dõi</button>
+          </form>
+        </div>
+
+        <div class="profile-alert-layout">
+          <div class="panel">
+            <div class="panel-title">Danh sách đang theo dõi</div>
+            {% if wanted_books %}
+              <div class="watch-list">
+                {% for item in wanted_books %}
+                  <div class="watch-item">
+                    <div>
+                      <div class="watch-query">{{ item.query }}</div>
+                      <div class="watch-date">Tạo {{ item.created_at[:10] }}</div>
+                    </div>
+                    <form method="POST" action="{{ url_for('delete_wanted_book', wanted_book_id=item.id) }}">
+                      <button type="submit" class="btn btn-outline btn-sm">Xóa</button>
+                    </form>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="empty-state empty-state-compact">
+                <h3>Chưa theo dõi đầu sách nào</h3>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">Cảnh báo gần đây</div>
+            {% if alert_notifications %}
+              <div class="watch-list">
+                {% for alert in alert_notifications %}
+                  <a href="{{ url_for('listing_detail', lid=alert.listing_id) }}" class="watch-item watch-item-link">
+                    <div>
+                      <div class="watch-query">{{ alert.title }}</div>
+                      <div class="watch-date">Khớp với: "{{ alert.query }}" · {{ alert.created_at[:16] }}</div>
+                    </div>
+                    <span class="badge badge-blue">
+                      {% if alert.listing_type == 'sell' %}
+                        {{ '{:,.0f}'.format(alert.price) }}đ
+                      {% elif alert.listing_type == 'free' %}
+                        Miễn phí
+                      {% else %}
+                        Trao đổi
+                      {% endif %}
+                    </span>
+                  </a>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="empty-state empty-state-compact">
+                <h3>Chưa có cảnh báo nào</h3>
+              </div>
+            {% endif %}
+          </div>
+        </div>
       </div>
 
       <div class="profile-tab-content" id="tab-security">
         <div class="panel">
           <div class="panel-title">Đổi mật khẩu</div>
           <form method="POST" action="{{ url_for('profile') }}">
-            
             <input type="hidden" name="full_name" value="{{ user.full_name or '' }}">
             <input type="hidden" name="email" value="{{ user.email or '' }}">
-
             <div class="form-group">
               <label class="form-label">Mật khẩu hiện tại</label>
-              <input type="password" name="current_password"
-                     class="form-control {{ 'error' if errors.current_password }}"
-                     placeholder="Nhập mật khẩu hiện tại">
-              {% if errors.current_password %}
-                <span class="form-error">{{ errors.current_password }}</span>
-              {% endif %}
+              <input type="password" name="current_password" class="form-control {{ 'error' if errors.current_password }}" placeholder="Nhập mật khẩu hiện tại">
+              {% if errors.current_password %}<span class="form-error">{{ errors.current_password }}</span>{% endif %}
             </div>
             <div class="form-group">
               <label class="form-label">Mật khẩu mới</label>
-              <input type="password" name="new_password"
-                     class="form-control {{ 'error' if errors.new_password }}"
-                     placeholder="Tối thiểu 6 ký tự">
-              {% if errors.new_password %}
-                <span class="form-error">{{ errors.new_password }}</span>
-              {% endif %}
+              <input type="password" name="new_password" class="form-control {{ 'error' if errors.new_password }}" placeholder="Tối thiểu 6 ký tự">
+              {% if errors.new_password %}<span class="form-error">{{ errors.new_password }}</span>{% endif %}
             </div>
             <button type="submit" class="btn btn-primary">Đổi mật khẩu</button>
           </form>
         </div>
       </div>
-
     </div>
   </div>
-
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-  // Auto-open tab from hash
   const hash = window.location.hash;
   if (hash === '#my-listings') {
     document.querySelector('[data-tab="tab-listings"]')?.click();
   } else if (hash === '#wishlist') {
     document.querySelector('[data-tab="tab-wishlist"]')?.click();
+  } else if (hash === '#wanted-books') {
+    document.querySelector('[data-tab="tab-alerts"]')?.click();
   }
 </script>
 {% endblock %}
