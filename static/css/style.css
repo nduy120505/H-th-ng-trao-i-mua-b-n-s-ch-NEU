@@ -799,12 +799,45 @@ tr:hover td     { background: var(--gray-50); }
   color: var(--gray-500);
 }
 .detail-rating { margin-bottom: 12px; }
-.seller-contact {
-  font-size: .85rem;
-  color: var(--gray-600);
+.seller-phone-box {
+  margin: 12px 0 10px;
+  padding: 14px 16px;
+  border: 1.5px solid rgba(0, 82, 140, .18);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, #f4f9fc 0%, #eef6fb 100%);
+}
+.seller-phone-box-compact {
+  margin: 12px 0;
+  text-align: left;
+}
+.seller-phone-label {
+  font-size: .73rem;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--gray-500);
   margin-bottom: 8px;
 }
-.seller-contact-link { color: var(--neu-blue); }
+.seller-phone-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--neu-blue);
+}
+.seller-phone-link:hover {
+  color: var(--neu-blue-dark);
+}
+.seller-phone-number {
+  font-size: 1.18rem;
+  font-weight: 800;
+  letter-spacing: .03em;
+}
+.seller-phone-hint {
+  font-size: .76rem;
+  color: var(--gray-600);
+  text-align: right;
+}
 .detail-message-btn { margin-bottom: 10px; }
 .report-box {
   margin-top: 10px;
@@ -873,15 +906,6 @@ tr:hover td     { background: var(--gray-50); }
 }
 .moderation-note-input {
   min-width: 220px;
-}
-.database-upload-form {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.database-upload-form .form-control {
-  max-width: 420px;
 }
 .detail-status-box {
   background: var(--gray-50);
@@ -1102,6 +1126,13 @@ tr:hover td     { background: var(--gray-50); }
   .report-grid      { grid-template-columns: 1fr; }
   .alert-create-form { grid-template-columns: 1fr; }
   .seller-reputation-grid { grid-template-columns: 1fr; }
+  .seller-phone-link {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .seller-phone-hint {
+    text-align: left;
+  }
 }
 
 @media (max-width: 480px) {

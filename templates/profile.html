@@ -62,7 +62,6 @@
         <button class="profile-tab active" data-tab="tab-info">Thông tin</button>
         <button class="profile-tab" data-tab="tab-listings" id="my-listings">Tin đăng ({{ my_listings|length }})</button>
         <button class="profile-tab" data-tab="tab-wishlist" id="wishlist">Yêu thích ({{ wishlist|length }})</button>
-        <button class="profile-tab" data-tab="tab-alerts" id="wanted-books">Auto Alert ({{ wanted_books|length }})</button>
         <button class="profile-tab" data-tab="tab-security">Bảo mật</button>
       </div>
 
@@ -237,71 +236,6 @@
         {% endif %}
       </div>
 
-      <div class="profile-tab-content" id="tab-alerts">
-        <div class="panel">
-          <div class="panel-title">Theo dõi sách mong muốn (Auto Alert)</div>
-          <p class="form-hint" style="margin-bottom:16px">Bạn nhập “Tôi cần sách X”, khi có tin phù hợp được duyệt, hệ thống sẽ đưa vào danh sách cảnh báo.</p>
-          <form method="POST" action="{{ url_for('create_wanted_book') }}" class="alert-create-form">
-            <input type="text" name="query" class="form-control" placeholder="Ví dụ: Giáo trình Kinh tế vi mô, MATH101, Marketing căn bản">
-            <button type="submit" class="btn btn-primary">Theo dõi</button>
-          </form>
-        </div>
-
-        <div class="profile-alert-layout">
-          <div class="panel">
-            <div class="panel-title">Danh sách đang theo dõi</div>
-            {% if wanted_books %}
-              <div class="watch-list">
-                {% for item in wanted_books %}
-                  <div class="watch-item">
-                    <div>
-                      <div class="watch-query">{{ item.query }}</div>
-                      <div class="watch-date">Tạo {{ item.created_at[:10] }}</div>
-                    </div>
-                    <form method="POST" action="{{ url_for('delete_wanted_book', wanted_book_id=item.id) }}">
-                      <button type="submit" class="btn btn-outline btn-sm">Xóa</button>
-                    </form>
-                  </div>
-                {% endfor %}
-              </div>
-            {% else %}
-              <div class="empty-state empty-state-compact">
-                <h3>Chưa theo dõi đầu sách nào</h3>
-              </div>
-            {% endif %}
-          </div>
-
-          <div class="panel">
-            <div class="panel-title">Cảnh báo gần đây</div>
-            {% if alert_notifications %}
-              <div class="watch-list">
-                {% for alert in alert_notifications %}
-                  <a href="{{ url_for('listing_detail', lid=alert.listing_id) }}" class="watch-item watch-item-link">
-                    <div>
-                      <div class="watch-query">{{ alert.title }}</div>
-                      <div class="watch-date">Khớp với: "{{ alert.query }}" · {{ alert.created_at[:16] }}</div>
-                    </div>
-                    <span class="badge badge-blue">
-                      {% if alert.listing_type == 'sell' %}
-                        {{ '{:,.0f}'.format(alert.price) }}đ
-                      {% elif alert.listing_type == 'free' %}
-                        Miễn phí
-                      {% else %}
-                        Trao đổi
-                      {% endif %}
-                    </span>
-                  </a>
-                {% endfor %}
-              </div>
-            {% else %}
-              <div class="empty-state empty-state-compact">
-                <h3>Chưa có cảnh báo nào</h3>
-              </div>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-
       <div class="profile-tab-content" id="tab-security">
         <div class="panel">
           <div class="panel-title">Đổi mật khẩu</div>
@@ -334,8 +268,6 @@
     document.querySelector('[data-tab="tab-listings"]')?.click();
   } else if (hash === '#wishlist') {
     document.querySelector('[data-tab="tab-wishlist"]')?.click();
-  } else if (hash === '#wanted-books') {
-    document.querySelector('[data-tab="tab-alerts"]')?.click();
   }
 </script>
 {% endblock %}

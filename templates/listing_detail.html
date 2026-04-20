@@ -140,8 +140,12 @@
 
         {% if listing.seller_username != session.get('username') %}
           {% if listing.seller_phone %}
-            <div class="seller-contact">
-              <a href="tel:{{ listing.seller_phone }}" class="seller-contact-link">{{ listing.seller_phone }}</a>
+            <div class="seller-phone-box">
+              <div class="seller-phone-label">Số điện thoại</div>
+              <a href="tel:{{ listing.seller_phone }}" class="seller-phone-link">
+                <span class="seller-phone-number">{{ listing.seller_phone }}</span>
+                <span class="seller-phone-hint">Chạm để gọi trên điện thoại</span>
+              </a>
             </div>
           {% endif %}
           <a href="{{ url_for('chat', lid=listing.id, oid=listing.seller_id) }}" class="btn btn-primary btn-block detail-message-btn">Nhắn tin người bán</a>

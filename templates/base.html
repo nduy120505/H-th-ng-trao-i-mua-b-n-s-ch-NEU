@@ -26,7 +26,6 @@
         <div class="header-quicknav">
           <a href="{{ url_for('home') }}" class="header-quicklink">Trang chủ</a>
           <a href="{{ url_for('listings') }}" class="header-quicklink">Khám phá</a>
-          <a href="{{ url_for('profile') }}#wanted-books" class="header-quicklink">Auto Alert</a>
         </div>
       {% endif %}
       <form class="header-search" action="{{ url_for('listings') }}" method="GET">
@@ -34,12 +33,6 @@
         <button type="submit">Tìm</button>
       </form>
       <div class="header-actions">
-        <a href="{{ url_for('profile') }}#wanted-books" class="header-btn" title="Cảnh báo sách">
-          Cảnh báo
-          {% if alert_count > 0 %}
-            <span class="badge-count">{{ alert_count }}</span>
-          {% endif %}
-        </a>
         <a href="{{ url_for('messages') }}" class="header-btn" title="Tin nhắn">
           Tin nhắn
           {% if unread_count > 0 %}
@@ -60,7 +53,6 @@
               <a href="{{ url_for('profile') }}">Hồ sơ của tôi</a>
               <a href="{{ url_for('profile') }}#my-listings">Tin đăng của tôi</a>
               <a href="{{ url_for('profile') }}#wishlist">Yêu thích</a>
-              <a href="{{ url_for('profile') }}#wanted-books">Auto Alert</a>
               {% if current_user.role == 'admin' %}
                 <div class="divider"></div>
                 <a href="{{ url_for('admin') }}">Quản trị viên</a>
@@ -112,12 +104,6 @@
         <div class="sidebar-nav-section-title">Tài khoản</div>
       </div>
       <a href="{{ url_for('profile') }}">Hồ sơ</a>
-      <a href="{{ url_for('profile') }}#wanted-books">
-        Auto Alert
-        {% if alert_count > 0 %}
-          <span class="badge badge-red sidebar-badge">{{ alert_count }}</span>
-        {% endif %}
-      </a>
       <a href="{{ url_for('messages') }}">
         Tin nhắn
         {% if unread_count > 0 %}

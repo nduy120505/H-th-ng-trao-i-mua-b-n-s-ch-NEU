@@ -16,9 +16,7 @@ Tài khoản mặc định:
 
 import os
 import secrets
-import shutil
 import sqlite3
-import tempfile
 from functools import wraps
 from datetime import datetime, timedelta
 
@@ -37,16 +35,47 @@ from database import get_db_connection, init_db, ensure_db_schema, DATABASE
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
 
-FACULTIES = [
+PRIMARY_FACULTIES = [
+    "Khoa Bảo hiểm",
+    "Khoa Bất động sản và Kinh tế tài nguyên",
+    "Khoa Công nghệ thông tin",
+    "Khoa Đầu tư",
+    "Khoa Du lịch và Khách sạn",
+    "Khoa Hệ thống thông tin quản lý",
+    "Khoa Kế hoạch và Phát triển",
+    "Khoa Khoa học Cơ sở",
+    "Khoa Khoa học dữ liệu và Trí tuệ nhân tạo",
+    "Khoa Khoa học quản lý",
+    "Khoa Kinh tế học",
+    "Khoa Kinh tế và Quản lý nguồn nhân lực",
+    "Khoa Luật",
+    "Khoa Lý luận chính trị",
+    "Khoa Marketing",
+    "Khoa Môi trường, Biến đổi khí hậu và Đô thị",
+    "Khoa Ngoại ngữ Kinh tế",
+    "Khoa Quản trị kinh doanh",
+    "Khoa Thống kê",
+    "Khoa Toán kinh tế",
+    "Viện Đào tạo Quốc tế",
+    "Viện Đào tạo Tiên tiến, Chất lượng cao và POHE",
+    "Viện Kế toán - Kiểm toán",
+    "Viện Ngân hàng - Tài chính",
+    "Viện Quản trị Kinh doanh",
+    "Viện Thương mại và Kinh tế quốc tế",
+]
+
+LEGACY_FACULTIES = [
     "Khoa Kinh Tế",
     "Khoa Quản Trị Kinh Doanh",
     "Khoa Tài Chính – Ngân Hàng",
     "Khoa Kế Toán – Kiểm Toán",
     "Khoa Hệ Thống Thông Tin",
-    "Khoa Marketing",
     "Khoa Luật Kinh Tế",
     "Khoa Bất Động Sản",
-    "Khoa Thống Kê",
+]
+
+FACULTIES = PRIMARY_FACULTIES + [
+    faculty for faculty in LEGACY_FACULTIES if faculty not in PRIMARY_FACULTIES
 ]
 
 CONDITION_LABELS = {
@@ -82,6 +111,42 @@ LISTING_STATUS_META = {
 
 
 VALID_BOOK_YEARS = ("1", "2", "3", "4")
+
+MOJIBAKE_TOKENS = ("Ã", "Â", "Ä", "Å", "Æ", "áº", "á»", "â€", "đŸ")
+VIETNAMESE_CHARS = set(
+    "aăâbcdđeêghiklmnoôơpqrstuưvxy"
+    "áàảãạắằẳẵặấầẩẫậ"
+    "éèẻẽẹếềểễệ"
+    "íìỉĩị"
+    "óòỏõọốồổỗộớờởỡợ"
+    "úùủũụứừửữự"
+    "ýỳỷỹỵ"
+)
+
+
+def _text_quality_score(value: str) -> int:
+    bad_score = sum(value.count(token) for token in MOJIBAKE_TOKENS) * 10
+    good_score = sum(ch.lower() in VIETNAMESE_CHARS for ch in value)
+    return good_score - bad_score
+
+
+def repair_text(value):
+    if not isinstance(value, str) or not value:
+        return value
+
+    candidates = [value]
+    if any(token in value for token in MOJIBAKE_TOKENS):
+        for encoding in ("cp1252", "latin1"):
+            try:
+                repaired = value.encode(encoding).decode("utf-8")
+            except (UnicodeEncodeError, UnicodeDecodeError):
+                continue
+            candidates.append(repaired)
+
+    return max(candidates, key=_text_quality_score)
+
+
+app.jinja_env.finalize = repair_text
 
 
 def can_view_listing(listing, user_id, role):
@@ -228,41 +293,6 @@ def bootstrap_database():
         init_db()
     else:
         ensure_db_schema()
-
-
-def replace_database_file(uploaded_file) -> str:
-    filename = (uploaded_file.filename or "").lower()
-    if not filename.endswith(".db"):
-        raise ValueError("Chi chap nhan file .db")
-
-    database_dir = os.path.dirname(DATABASE)
-    os.makedirs(database_dir, exist_ok=True)
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".db", dir=database_dir) as tmp:
-        uploaded_file.save(tmp.name)
-        temp_path = tmp.name
-
-    try:
-        test_conn = sqlite3.connect(temp_path)
-        tables = {
-            row[0] for row in test_conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'"
-            ).fetchall()
-        }
-        test_conn.close()
-        required_tables = {"users", "books", "listings", "messages"}
-        if not required_tables.issubset(tables):
-            raise ValueError("File database khong hop le hoac thieu bang can thiet")
-
-        backup_path = f"{DATABASE}.backup-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
-        if os.path.exists(DATABASE):
-            shutil.copy2(DATABASE, backup_path)
-        os.replace(temp_path, DATABASE)
-        ensure_db_schema()
-        return backup_path if os.path.exists(backup_path) else ""
-    finally:
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
 
 
 bootstrap_database()
@@ -1517,31 +1547,6 @@ def dismiss_report(rid):
     return redirect(url_for("admin"))
 
 
-@app.route("/admin/database/upload", methods=["POST"])
-@login_required
-@admin_required
-def upload_database():
-    uploaded_file = request.files.get("database_file")
-    if not uploaded_file or not uploaded_file.filename:
-        flash("Hay chon file database .db de upload.", "warning")
-        return redirect(url_for("admin"))
-
-    try:
-        backup_path = replace_database_file(uploaded_file)
-    except ValueError as exc:
-        flash(str(exc), "danger")
-        return redirect(url_for("admin"))
-    except Exception:
-        flash("Khong the thay database. Kiem tra file va thu lai.", "danger")
-        return redirect(url_for("admin"))
-
-    if backup_path:
-        flash(f"Da thay database thanh cong. Backup cu: {backup_path}", "success")
-    else:
-        flash("Da thay database thanh cong.", "success")
-    return redirect(url_for("admin"))
-
-
 @app.route("/admin")
 @login_required
 @admin_required
@@ -1649,7 +1654,7 @@ def admin():
 
 if __name__ == "__main__":
     bootstrap_database()
-    print("🚀 NEU Bookstore đang chạy → http://localhost:5000")
+    print("NEU Bookstore dang chay: http://localhost:5000")
     app.run(
         debug=os.environ.get("FLASK_DEBUG", "").lower() == "true",
         host="0.0.0.0",
