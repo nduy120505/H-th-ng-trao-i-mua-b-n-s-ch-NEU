@@ -26,6 +26,7 @@
         <div class="header-quicknav">
           <a href="{{ url_for('home') }}" class="header-quicklink">Trang chủ</a>
           <a href="{{ url_for('listings') }}" class="header-quicklink">Khám phá</a>
+          <a href="{{ url_for('nearby_listings') }}" class="header-quicklink">Gần bạn</a>
         </div>
       {% endif %}
       <form class="header-search" action="{{ url_for('listings') }}" method="GET">
@@ -80,6 +81,7 @@
       </div>
       <a href="{{ url_for('home') }}">Trang chủ</a>
       <a href="{{ url_for('listings') }}">Tất cả sách</a>
+      <a href="{{ url_for('nearby_listings') }}">Tìm sách gần bạn</a>
       <a href="{{ url_for('listings') }}?type=sell">Sách bán</a>
       <a href="{{ url_for('listings') }}?type=exchange">Trao đổi</a>
       <a href="{{ url_for('listings') }}?type=free">Sách miễn phí</a>
@@ -162,6 +164,39 @@
   </footer>
 </div>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% if current_user %}
+<script>
+  window.NEURequestLocation = function(options) {
+    options = options || {};
+    if (!navigator.geolocation) {
+      return;
+    }
+    if (!options.force && sessionStorage.getItem('neu-location-requested') === '1') {
+      return;
+    }
+    sessionStorage.setItem('neu-location-requested', '1');
+    navigator.geolocation.getCurrentPosition(function(position) {
+      fetch('{{ url_for("update_location_api") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        })
+      }).then(function(response) {
+        if (response.ok && options.reload) {
+          window.location.reload();
+        }
+      }).catch(function() {});
+    }, function() {}, {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 300000
+    });
+  };
+  window.NEURequestLocation();
+</script>
+{% endif %}
 {% block extra_js %}{% endblock %}
 </body>
 </html>

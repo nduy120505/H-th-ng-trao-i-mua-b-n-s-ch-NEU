@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Tìm Sách Gần Bạn{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="breadcrumb">
+    <a href="{{ url_for('home') }}">Trang chủ</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Tìm sách gần bạn</span>
+  </div>
+
+  <div class="card" style="padding:24px;margin-bottom:22px;background:linear-gradient(135deg,#fff7ed,#eff6ff)">
+    <div style="display:flex;justify-content:space-between;gap:18px;align-items:center;flex-wrap:wrap">
+      <div>
+        <div class="section-kicker">Location-based</div>
+        <h1 style="margin:6px 0 8px;font-size:2rem;color:var(--neu-blue)">Sách quanh bạn</h1>
+        <p style="margin:0;color:var(--gray-600)">
+          Lọc sách theo khoảng cách từ vị trí hiện tại của bạn tới người bán.
+        </p>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <a href="{{ url_for('nearby_listings', radius=1) }}"
+           class="btn {{ 'btn-primary' if radius == '1' else 'btn-outline' }}">Trong 1km</a>
+        <a href="{{ url_for('nearby_listings', radius=5) }}"
+           class="btn {{ 'btn-primary' if radius == '5' else 'btn-outline' }}">Trong 5km</a>
+      </div>
+    </div>
+  </div>
+
+  {% if not user_has_location %}
+    <div class="empty-state">
+      <h3>Chưa có vị trí của bạn</h3>
+      <p>Trình duyệt sẽ hỏi quyền truy cập vị trí sau khi đăng nhập. Hãy bấm Cho phép rồi tải lại trang này.</p>
+      <button class="btn btn-primary" id="requestLocationBtn">Cập nhật vị trí ngay</button>
+    </div>
+  {% else %}
+    {% if exchange_suggestions %}
+      <div style="margin-bottom:28px">
+        <div class="section-header">
+          <div>
+            <div class="section-kicker">Gợi ý trao đổi gần</div>
+            <h2>Trao đổi sách trong {{ radius }}km</h2>
+          </div>
+        </div>
+        <div class="book-grid">
+          {% for l in exchange_suggestions %}
+            <a href="{{ url_for('listing_detail', lid=l.id) }}" class="card book-card">
+              <div class="book-card-cover">
+                {% if l.cover_image %}
+                  <img src="{{ l.cover_image }}" alt="{{ l.title }}" class="book-cover-image">
+                {% else %}
+                  <span class="book-card-cover-label">Sách</span>
+                {% endif %}
+                <button class="wishlist-btn {{ 'wishlisted' if l.id in wishlist_ids }}" data-lid="{{ l.id }}">
+                  {{ 'Đã lưu' if l.id in wishlist_ids else 'Lưu' }}
+                </button>
+              </div>
+              <div class="book-card-body">
+                <div class="book-card-title">{{ l.title }}</div>
+                <div class="book-card-author">{{ l.author or '' }}</div>
+                <div class="book-card-meta">
+                  <span class="badge badge-blue">Trao đổi</span>
+                  <span class="badge badge-green">{{ '%.1f'|format(l.distance_km) }} km</span>
+                </div>
+                <div class="book-card-price book-card-exchange">Trao đổi gần bạn</div>
+                <div class="book-card-foot">{{ l.seller_name or l.seller_username }} · {{ l.views }} lượt xem</div>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="listings-toolbar">
+      <div class="listings-count">
+        <strong>{{ listings|length }}</strong> tin đăng trong {{ radius }}km
+      </div>
+      <div style="font-size:.85rem;color:var(--gray-600)">Sắp xếp theo khoảng cách gần nhất</div>
+    </div>
+
+    {% if listings %}
+      <div class="book-grid">
+        {% for l in listings %}
+          <a href="{{ url_for('listing_detail', lid=l.id) }}" class="card book-card">
+            <div class="book-card-cover">
+              {% if l.cover_image %}
+                <img src="{{ l.cover_image }}" alt="{{ l.title }}" class="book-cover-image">
+              {% else %}
+                <span class="book-card-cover-label">Sách</span>
+              {% endif %}
+              <button class="wishlist-btn {{ 'wishlisted' if l.id in wishlist_ids }}" data-lid="{{ l.id }}">
+                {{ 'Đã lưu' if l.id in wishlist_ids else 'Lưu' }}
+              </button>
+            </div>
+            <div class="book-card-body">
+              <div class="book-card-title">{{ l.title }}</div>
+              <div class="book-card-author">{{ l.author or '' }}</div>
+              <div class="book-card-meta">
+                {% set type_info = TYPE_LABELS.get(l.listing_type, ('', '')) %}
+                <span class="badge {{ 'badge-red' if l.listing_type == 'sell' else ('badge-blue' if l.listing_type == 'exchange' else 'badge-green') }}">
+                  {{ type_info[0] }}
+                </span>
+                <span class="badge badge-green">{{ '%.1f'|format(l.distance_km) }} km</span>
+              </div>
+              {% if l.listing_type == 'sell' %}
+                <div class="book-card-price">{{ '{:,.0f}'.format(l.price) }}đ</div>
+              {% elif l.listing_type == 'free' %}
+                <div class="book-card-price book-card-free">Miễn phí</div>
+              {% else %}
+                <div class="book-card-price book-card-exchange">Trao đổi</div>
+              {% endif %}
+              <div class="book-card-foot">{{ l.seller_name or l.seller_username }} · {{ l.views }} lượt xem</div>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <h3>Chưa có sách nào trong {{ radius }}km</h3>
+        <p>Thử mở rộng sang bán kính 5km hoặc quay lại sau khi có thêm người bán gần bạn.</p>
+        <a href="{{ url_for('nearby_listings', radius=5) }}" class="btn btn-outline empty-state-action">Xem trong 5km</a>
+      </div>
+    {% endif %}
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.getElementById('requestLocationBtn')?.addEventListener('click', () => {
+    window.NEURequestLocation?.({ force: true, reload: true });
+  });
+</script>
+{% endblock %}

@@ -43,6 +43,9 @@ CREATE TABLE IF NOT EXISTS users (
     full_name     TEXT,
     email         TEXT,
     phone         TEXT,
+    latitude      REAL,
+    longitude     REAL,
+    location_updated_at TIMESTAMP,
     student_id    TEXT    UNIQUE,
     faculty       TEXT,
     course_year   INTEGER,
@@ -314,22 +317,29 @@ def sync_seed_data(conn: sqlite3.Connection) -> None:
              subject_code, description, cover_emoji, cover_image, index),
         )
 
+    demo_locations = {
+        "sv001": (21.0006, 105.8421),
+        "sv002": (20.9987, 105.8443),
+        "sv003": (21.0048, 105.8468),
+    }
     for uname, pwd, fname, email, phone, sid, faculty, year in SEED_USERS:
+        lat, lng = demo_locations.get(uname, (None, None))
         cur.execute(
             """
             INSERT OR IGNORE INTO users
-            (username, password_hash, full_name, email, phone, student_id, faculty, course_year, role)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (username, password_hash, full_name, email, phone, latitude, longitude, student_id, faculty, course_year, role)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (uname, generate_password_hash(pwd), fname, email, phone, sid, faculty, year, "student"),
+            (uname, generate_password_hash(pwd), fname, email, phone, lat, lng, sid, faculty, year, "student"),
         )
         cur.execute(
             """
             UPDATE users
-            SET full_name=?, email=?, phone=?, student_id=?, faculty=?, course_year=?
+            SET full_name=?, email=?, phone=?, latitude=COALESCE(latitude, ?),
+                longitude=COALESCE(longitude, ?), student_id=?, faculty=?, course_year=?
             WHERE username=?
             """,
-            (fname, email, phone, sid, faculty, year, uname),
+            (fname, email, phone, lat, lng, sid, faculty, year, uname),
         )
 
     cur.execute(
@@ -446,6 +456,16 @@ def ensure_db_schema(conn: sqlite3.Connection | None = None) -> None:
     }
     if "cover_image" not in book_cols:
         cur.execute("ALTER TABLE books ADD COLUMN cover_image TEXT")
+
+    user_cols = {
+        row["name"] for row in cur.execute("PRAGMA table_info(users)").fetchall()
+    }
+    if "latitude" not in user_cols:
+        cur.execute("ALTER TABLE users ADD COLUMN latitude REAL")
+    if "longitude" not in user_cols:
+        cur.execute("ALTER TABLE users ADD COLUMN longitude REAL")
+    if "location_updated_at" not in user_cols:
+        cur.execute("ALTER TABLE users ADD COLUMN location_updated_at TIMESTAMP")
 
     listing_cols = {
         row["name"] for row in cur.execute("PRAGMA table_info(listings)").fetchall()

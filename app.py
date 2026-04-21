@@ -20,6 +20,7 @@ import sqlite3
 import smtplib
 import ssl
 import string
+import math
 from functools import wraps
 from datetime import datetime, timedelta
 from email.message import EmailMessage
@@ -179,6 +180,21 @@ def format_local_timestamp(value, fmt="%H:%M"):
         return dt.strftime(fmt)
     except ValueError:
         return value
+
+
+def distance_km(lat1, lon1, lat2, lon2):
+    if None in (lat1, lon1, lat2, lon2):
+        return None
+    radius_km = 6371.0
+    phi1 = math.radians(float(lat1))
+    phi2 = math.radians(float(lat2))
+    delta_phi = math.radians(float(lat2) - float(lat1))
+    delta_lambda = math.radians(float(lon2) - float(lon1))
+    a = (
+        math.sin(delta_phi / 2) ** 2
+        + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2) ** 2
+    )
+    return radius_km * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
 def generate_temporary_password(length=10):
@@ -576,6 +592,33 @@ def logout():
 # Home
 # ─────────────────────────────────────────────────────────────────────────────
 
+@app.route("/api/location", methods=["POST"])
+@login_required
+def update_location_api():
+    data = request.get_json(silent=True) or {}
+    try:
+        latitude = float(data.get("latitude"))
+        longitude = float(data.get("longitude"))
+    except (TypeError, ValueError):
+        return jsonify({"ok": False, "error": "invalid_location"}), 400
+
+    if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+        return jsonify({"ok": False, "error": "invalid_location"}), 400
+
+    conn = get_db_connection()
+    conn.execute(
+        """
+        UPDATE users
+        SET latitude=?, longitude=?, location_updated_at=CURRENT_TIMESTAMP
+        WHERE id=?
+        """,
+        (latitude, longitude, session["user_id"]),
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True})
+
+
 @app.route("/home")
 @login_required
 def home():
@@ -727,6 +770,69 @@ def listings():
 # ─────────────────────────────────────────────────────────────────────────────
 # Listing detail
 # ─────────────────────────────────────────────────────────────────────────────
+
+@app.route("/nearby")
+@login_required
+def nearby_listings():
+    radius = request.args.get("radius", "5")
+    if radius not in ("1", "5"):
+        radius = "5"
+    radius_km = float(radius)
+
+    conn = get_db_connection()
+    user = conn.execute("SELECT * FROM users WHERE id=?", (session["user_id"],)).fetchone()
+    rows = conn.execute(
+        """
+        SELECT l.*, b.title, b.author, b.cover_emoji, b.cover_image, b.subject_code,
+               b.faculty book_faculty, b.course_year book_year,
+               u.full_name seller_name, u.username seller_username, u.rating_avg,
+               u.latitude seller_latitude, u.longitude seller_longitude,
+               c.name cat_name, c.icon cat_icon
+        FROM listings l
+        JOIN books b ON b.id = l.book_id
+        JOIN users u ON u.id = l.seller_id
+        LEFT JOIN categories c ON c.id = b.category_id
+        WHERE l.status='active'
+          AND u.latitude IS NOT NULL
+          AND u.longitude IS NOT NULL
+          AND l.seller_id != ?
+        """,
+        (session["user_id"],),
+    ).fetchall()
+    wl = conn.execute(
+        "SELECT listing_id FROM wishlist WHERE user_id=?", (session["user_id"],)
+    ).fetchall()
+    wishlist_ids = {r["listing_id"] for r in wl}
+    conn.close()
+
+    user_has_location = user and user["latitude"] is not None and user["longitude"] is not None
+    nearby_rows = []
+    if user_has_location:
+        for row in rows:
+            item = dict(row)
+            item["distance_km"] = distance_km(
+                user["latitude"],
+                user["longitude"],
+                item["seller_latitude"],
+                item["seller_longitude"],
+            )
+            if item["distance_km"] is not None and item["distance_km"] <= radius_km:
+                nearby_rows.append(item)
+        nearby_rows.sort(key=lambda item: (item["distance_km"], item["created_at"] or ""))
+
+    exchange_suggestions = [
+        item for item in nearby_rows if item["listing_type"] == "exchange"
+    ][:6]
+
+    return render_template(
+        "nearby.html",
+        listings=nearby_rows,
+        exchange_suggestions=exchange_suggestions,
+        radius=radius,
+        user_has_location=user_has_location,
+        wishlist_ids=wishlist_ids,
+    )
+
 
 @app.route("/listing/<int:lid>")
 @login_required
