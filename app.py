@@ -45,6 +45,7 @@ SMTP_USERNAME = os.environ.get("SMTP_USERNAME", "").strip()
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
 SMTP_FROM = os.environ.get("SMTP_FROM", SMTP_USERNAME or "no-reply@neu-bookstore.local").strip()
 SMTP_USE_TLS = os.environ.get("SMTP_USE_TLS", "true").lower() not in ("0", "false", "no")
+SMTP_TIMEOUT = int(os.environ.get("SMTP_TIMEOUT", "15"))
 
 PRIMARY_FACULTIES = [
     "Khoa Bảo hiểm",
@@ -211,13 +212,18 @@ def send_new_password_email(user, new_password):
     message.set_content(body)
 
     if SMTP_USE_TLS:
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as smtp:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=SMTP_TIMEOUT) as smtp:
             smtp.starttls(context=ssl.create_default_context())
             if SMTP_USERNAME:
                 smtp.login(SMTP_USERNAME, SMTP_PASSWORD)
             smtp.send_message(message)
     else:
-        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=ssl.create_default_context()) as smtp:
+        with smtplib.SMTP_SSL(
+            SMTP_HOST,
+            SMTP_PORT,
+            timeout=SMTP_TIMEOUT,
+            context=ssl.create_default_context(),
+        ) as smtp:
             if SMTP_USERNAME:
                 smtp.login(SMTP_USERNAME, SMTP_PASSWORD)
             smtp.send_message(message)

@@ -74,6 +74,7 @@ SMTP_USERNAME=your-email@gmail.com
 SMTP_PASSWORD=your-app-password
 SMTP_FROM=your-email@gmail.com
 SMTP_USE_TLS=true
+SMTP_TIMEOUT=15
 ```
 
 `DATABASE_PATH` nen tro vao volume mount path de du lieu khong bi mat.
@@ -110,6 +111,7 @@ Neu muon dung domain rieng:
 | `SMTP_PASSWORD` | Khong | Mat khau/app password SMTP |
 | `SMTP_FROM` | Khong | Dia chi nguoi gui email |
 | `SMTP_USE_TLS` | Khong | `true` de dung STARTTLS, `false` de dung SMTP_SSL |
+| `SMTP_TIMEOUT` | Khong | So giay toi da cho ket noi SMTP, mac dinh `15` |
 
 ## Luu y production
 
