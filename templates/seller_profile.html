@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}{{ seller.full_name or seller.username }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="breadcrumb">
+    <a href="{{ url_for('home') }}">Trang chủ</a>
+    <span class="breadcrumb-sep">›</span>
+    <a href="{{ url_for('listings') }}">Người bán</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>{{ seller.full_name or seller.username }}</span>
+  </div>
+
+  <div class="profile-layout">
+    <div>
+      <div class="profile-card">
+        <div class="profile-avatar-big">{{ seller.full_name[0] if seller.full_name else 'U' }}</div>
+        <div style="font-size:1.05rem;font-weight:700;margin-bottom:4px">{{ seller.full_name or seller.username }}</div>
+        <div style="font-size:.8rem;color:var(--gray-500);margin-bottom:12px">@{{ seller.username }}</div>
+        <div class="profile-reputation-card">
+          <div class="trust-score">{{ '%.1f'|format(reputation.rating_avg or 0) }}/5</div>
+          <div class="seller-rating-note">{{ reputation.rating_count or 0 }} đánh giá</div>
+          <div class="seller-reputation-grid">
+            <div class="seller-reputation-item">
+              <strong>{{ reputation.completed_listings or 0 }}</strong>
+              <span>Giao dịch</span>
+            </div>
+            <div class="seller-reputation-item">
+              <strong>{{ reputation.active_listings or 0 }}</strong>
+              <span>Tin active</span>
+            </div>
+            <div class="seller-reputation-item">
+              <strong>{{ reputation.pending_reports or 0 }}</strong>
+              <span>Report mở</span>
+            </div>
+          </div>
+        </div>
+        {% if seller.faculty %}
+          <div class="badge badge-blue" style="margin-bottom:8px">{{ seller.faculty }}</div>
+        {% endif %}
+        {% if seller.phone %}
+          <div class="seller-phone-box seller-phone-box-compact">
+            <div class="seller-phone-label">Số điện thoại</div>
+            <a href="tel:{{ seller.phone }}" class="seller-phone-link">
+              <span class="seller-phone-number">{{ seller.phone }}</span>
+              <span class="seller-phone-hint">Chạm để gọi trên điện thoại</span>
+            </a>
+          </div>
+        {% endif %}
+        {% if seller.bio %}
+          <div style="font-size:.82rem;color:var(--gray-600);margin-top:12px;text-align:left;line-height:1.5;padding:10px;background:var(--gray-50);border-radius:var(--radius-sm)">
+            {{ seller.bio }}
+          </div>
+        {% endif %}
+        <div class="divider"></div>
+        <div style="font-size:.78rem;color:var(--gray-500)">Tham gia: {{ seller.created_at[:10] }}</div>
+      </div>
+
+      {% if reviewable_listings %}
+        <div class="panel" style="margin-top:16px">
+          <div class="panel-title">Đánh giá người bán</div>
+          <form method="POST" action="{{ url_for('submit_seller_review', user_id=seller.id) }}">
+            <div class="form-group">
+              <label class="form-label">Chọn giao dịch</label>
+              <select name="listing_id" class="form-control">
+                {% for item in reviewable_listings %}
+                  <option value="{{ item.id }}">{{ item.title }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Số sao</label>
+              <select name="rating" class="form-control">
+                <option value="5">5 sao</option>
+                <option value="4">4 sao</option>
+                <option value="3">3 sao</option>
+                <option value="2">2 sao</option>
+                <option value="1">1 sao</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nhận xét</label>
+              <textarea name="comment" class="form-control" rows="3" placeholder="Mô tả ngắn trải nghiệm giao dịch"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Gửi đánh giá</button>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="section-header">
+          <div class="section-title">Tin đang bán</div>
+          <span class="badge badge-gray">{{ listings|length }} tin</span>
+        </div>
+        {% if listings %}
+          <div class="book-grid">
+            {% for item in listings %}
+              <a href="{{ url_for('listing_detail', lid=item.id) }}" class="card book-card">
+                <div class="book-card-cover">
+                  {% if item.cover_image %}
+                    <img src="{{ item.cover_image }}" alt="{{ item.title }}" class="book-cover-image">
+                  {% else %}
+                    <span class="book-card-cover-label">Sách</span>
+                  {% endif %}
+                </div>
+                <div class="book-card-body">
+                  <div class="book-card-title">{{ item.title }}</div>
+                  <div class="book-card-author">{{ item.author or item.subject_code or 'Người bán uy tín' }}</div>
+                  {% if item.listing_type == 'sell' %}
+                    <div class="book-card-price">{{ '{:,.0f}'.format(item.price) }}đ</div>
+                  {% elif item.listing_type == 'free' %}
+                    <div class="book-card-price book-card-free">Miễn phí</div>
+                  {% else %}
+                    <div class="book-card-price book-card-exchange">Trao đổi</div>
+                  {% endif %}
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-state empty-state-compact">
+            <h3>Hiện chưa có tin active</h3>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="panel" style="margin-top:16px">
+        <div class="section-header">
+          <div class="section-title">Đánh giá cộng đồng</div>
+          <span class="badge badge-blue">{{ reviews|length }} nhận xét</span>
+        </div>
+        {% if reviews %}
+          <div class="review-list">
+            {% for review in reviews %}
+              <div class="review-item">
+                <div class="review-stars">{{ review.rating }}/5</div>
+                <div>
+                  <div class="review-author">
+                    {{ review.reviewer_name or review.reviewer_username }}
+                    <span class="review-book">· {{ review.listing_title }}</span>
+                  </div>
+                  {% if review.comment %}
+                    <div class="review-comment">{{ review.comment }}</div>
+                  {% endif %}
+                  <div class="watch-date">{{ review.created_at[:10] }}</div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-state empty-state-compact">
+            <h3>Chưa có đánh giá nào</h3>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

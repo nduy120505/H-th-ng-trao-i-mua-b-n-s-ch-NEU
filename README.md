@@ -68,6 +68,12 @@ Trong service web, them:
 SECRET_KEY=mot_chuoi_bi_mat_rat_dai
 DATABASE_PATH=/data/neu_bookstore.db
 FLASK_DEBUG=false
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+SMTP_FROM=your-email@gmail.com
+SMTP_USE_TLS=true
 ```
 
 `DATABASE_PATH` nen tro vao volume mount path de du lieu khong bi mat.
@@ -98,6 +104,12 @@ Neu muon dung domain rieng:
 | `SECRET_KEY` | Nen co | Khoa session Flask |
 | `DATABASE_PATH` | Nen co | Duong dan file SQLite |
 | `FLASK_DEBUG` | Khong | De `false` khi production |
+| `SMTP_HOST` | Khong | SMTP server de gui mat khau moi khi quen mat khau |
+| `SMTP_PORT` | Khong | Cong SMTP, mac dinh `587` |
+| `SMTP_USERNAME` | Khong | Tai khoan dang nhap SMTP |
+| `SMTP_PASSWORD` | Khong | Mat khau/app password SMTP |
+| `SMTP_FROM` | Khong | Dia chi nguoi gui email |
+| `SMTP_USE_TLS` | Khong | `true` de dung STARTTLS, `false` de dung SMTP_SSL |
 
 ## Luu y production
 

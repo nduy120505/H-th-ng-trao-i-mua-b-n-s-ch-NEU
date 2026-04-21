@@ -250,9 +250,9 @@ SEED_BOOKS = [
 ]
 
 SEED_USERS = [
-    ("sv001", "123456", "Nguyễn Văn An", "an.nv@st.neu.edu.vn", "0912345678", "SV2021001", "Khoa Kinh Tế", 2021),
-    ("sv002", "123456", "Trần Thị Bình", "binh.tt@st.neu.edu.vn", "0923456789", "SV2022002", "Khoa Quản Trị Kinh Doanh", 2022),
-    ("sv003", "123456", "Lê Quang Cường", "cuong.lq@st.neu.edu.vn", "0934567890", "SV2020003", "Khoa Tài Chính – Ngân Hàng", 2020),
+    ("sv001", "123456", "Nguyễn Văn An", "an.nv@st.neu.edu.vn", "0362710976", "SV2021001", "Khoa Kinh Tế", 2021),
+    ("sv002", "123456", "Trần Thị Bình", "binh.tt@st.neu.edu.vn", "0362710976", "SV2022002", "Khoa Quản Trị Kinh Doanh", 2022),
+    ("sv003", "123456", "Lê Quang Cường", "cuong.lq@st.neu.edu.vn", "0362710976", "SV2020003", "Khoa Tài Chính – Ngân Hàng", 2020),
 ]
 
 # (book_id, user_idx 0/1/2, type, price, condition, notes, exchange_for, views)

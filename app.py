@@ -17,8 +17,12 @@ Tài khoản mặc định:
 import os
 import secrets
 import sqlite3
+import smtplib
+import ssl
+import string
 from functools import wraps
 from datetime import datetime, timedelta
+from email.message import EmailMessage
 
 from flask import (
     Flask, render_template, request, redirect,
@@ -34,6 +38,13 @@ from database import get_db_connection, init_db, ensure_db_schema, DATABASE
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
+
+SMTP_HOST = os.environ.get("SMTP_HOST", "").strip()
+SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+SMTP_USERNAME = os.environ.get("SMTP_USERNAME", "").strip()
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+SMTP_FROM = os.environ.get("SMTP_FROM", SMTP_USERNAME or "no-reply@neu-bookstore.local").strip()
+SMTP_USE_TLS = os.environ.get("SMTP_USE_TLS", "true").lower() not in ("0", "false", "no")
 
 PRIMARY_FACULTIES = [
     "Khoa Bảo hiểm",
@@ -167,6 +178,50 @@ def format_local_timestamp(value, fmt="%H:%M"):
         return dt.strftime(fmt)
     except ValueError:
         return value
+
+
+def generate_temporary_password(length=10):
+    alphabet = string.ascii_letters + string.digits
+    return "".join(secrets.choice(alphabet) for _ in range(length))
+
+
+def send_new_password_email(user, new_password):
+    subject = "Mat khau moi cho tai khoan NEU Bookstore"
+    body = (
+        f"Xin chao {user['full_name'] or user['username']},\n\n"
+        "He thong da tao mat khau moi cho tai khoan NEU Bookstore cua ban.\n\n"
+        f"Ten dang nhap: {user['username']}\n"
+        f"Mat khau moi: {new_password}\n\n"
+        "Vui long dang nhap va doi lai mat khau trong trang Ho so cua toi.\n"
+        "Neu ban khong yeu cau thao tac nay, hay dang nhap va doi mat khau ngay."
+    )
+
+    if not SMTP_HOST:
+        app.logger.warning(
+            "SMTP_HOST is not configured. New password for %s: %s",
+            user["email"],
+            new_password,
+        )
+        return False
+
+    message = EmailMessage()
+    message["Subject"] = subject
+    message["From"] = SMTP_FROM
+    message["To"] = user["email"]
+    message.set_content(body)
+
+    if SMTP_USE_TLS:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as smtp:
+            smtp.starttls(context=ssl.create_default_context())
+            if SMTP_USERNAME:
+                smtp.login(SMTP_USERNAME, SMTP_PASSWORD)
+            smtp.send_message(message)
+    else:
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=ssl.create_default_context()) as smtp:
+            if SMTP_USERNAME:
+                smtp.login(SMTP_USERNAME, SMTP_PASSWORD)
+            smtp.send_message(message)
+    return True
 
 
 def normalize_book_years(values):
@@ -400,6 +455,55 @@ def login():
             error = "invalid"
 
     return render_template("login.html", error=error)
+
+
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if "user_id" in session:
+        return redirect(url_for("home"))
+
+    error = None
+    email = request.form.get("email", "").strip().lower()
+
+    if request.method == "POST":
+        if not email:
+            error = "email"
+        else:
+            conn = get_db_connection()
+            user = conn.execute(
+                "SELECT * FROM users WHERE lower(email)=?",
+                (email,),
+            ).fetchone()
+
+            if user:
+                new_password = generate_temporary_password()
+                conn.execute(
+                    "UPDATE users SET password_hash=? WHERE id=?",
+                    (generate_password_hash(new_password), user["id"]),
+                )
+
+                try:
+                    email_sent = send_new_password_email(user, new_password)
+                    conn.commit()
+                    if email_sent:
+                        flash("Mat khau moi da duoc gui ve email dang ky cua ban.", "success")
+                    else:
+                        flash(
+                            "Mat khau moi da duoc tao. Chua cau hinh SMTP nen hay xem console server.",
+                            "warning",
+                        )
+                    conn.close()
+                    return redirect(url_for("login"))
+                except Exception:
+                    conn.rollback()
+                    app.logger.exception("Could not send password reset email")
+                    conn.close()
+                    error = "send_failed"
+            else:
+                conn.close()
+                error = "not_found"
+
+    return render_template("forgot_password.html", error=error, email=email)
 
 
 @app.route("/register", methods=["GET", "POST"])
