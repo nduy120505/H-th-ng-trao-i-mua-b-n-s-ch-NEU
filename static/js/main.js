@@ -93,11 +93,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const bookSelect = document.getElementById('book_id');
   const newBookForm = document.getElementById('newBookForm');
   const newTitleInput = document.getElementById('new_title');
-  bookSelect?.addEventListener('change', () => {
+  const existingCoverImageField = document.getElementById('existingCoverImageField');
+  const updateBookFields = () => {
+    if (!bookSelect) return;
     const isNew = bookSelect.value === '__new__';
     if (newBookForm) newBookForm.style.display = isNew ? '' : 'none';
     if (newTitleInput) newTitleInput.required = isNew;
-  });
+    if (existingCoverImageField) existingCoverImageField.style.display = isNew ? 'none' : '';
+  };
+  bookSelect?.addEventListener('change', updateBookFields);
+  updateBookFields();
 
   document.querySelectorAll('.profile-tab').forEach((tab) => {
     tab.addEventListener('click', () => {
