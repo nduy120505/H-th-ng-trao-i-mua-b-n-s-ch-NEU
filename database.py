@@ -406,6 +406,7 @@ def ensure_db_schema(conn: sqlite3.Connection | None = None) -> None:
         close_conn = True
 
     cur = conn.cursor()
+    cur.executescript(SCHEMA_SQL)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS user_reports (
             id               INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -460,6 +461,22 @@ def ensure_db_schema(conn: sqlite3.Connection | None = None) -> None:
     user_cols = {
         row["name"] for row in cur.execute("PRAGMA table_info(users)").fetchall()
     }
+    if "student_id" not in user_cols:
+        cur.execute("ALTER TABLE users ADD COLUMN student_id TEXT")
+    if "faculty" not in user_cols:
+        cur.execute("ALTER TABLE users ADD COLUMN faculty TEXT")
+    if "course_year" not in user_cols:
+        cur.execute("ALTER TABLE users ADD COLUMN course_year INTEGER")
+    if "role" not in user_cols:
+        cur.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'student'")
+    if "bio" not in user_cols:
+        cur.execute("ALTER TABLE users ADD COLUMN bio TEXT")
+    if "rating_avg" not in user_cols:
+        cur.execute("ALTER TABLE users ADD COLUMN rating_avg REAL DEFAULT 0")
+    if "rating_count" not in user_cols:
+        cur.execute("ALTER TABLE users ADD COLUMN rating_count INTEGER DEFAULT 0")
+    if "created_at" not in user_cols:
+        cur.execute("ALTER TABLE users ADD COLUMN created_at TIMESTAMP")
     if "latitude" not in user_cols:
         cur.execute("ALTER TABLE users ADD COLUMN latitude REAL")
     if "longitude" not in user_cols:

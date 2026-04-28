@@ -42,8 +42,9 @@
           <div class="form-group">
             <label class="form-label">Mã sinh viên</label>
             <input type="text" name="student_id"
-                   class="form-control"
+                   class="form-control {% if errors.student_id %}error{% endif %}"
                    value="{{ form.get('student_id','') }}" placeholder="VD: 112xxxxx">
+            {% if errors.student_id %}<span class="form-error">{{ errors.student_id }}</span>{% endif %}
           </div>
         </div>
         <div class="form-group">

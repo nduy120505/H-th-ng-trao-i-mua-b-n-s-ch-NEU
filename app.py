@@ -555,6 +555,11 @@ def register():
             conn = get_db_connection()
             if conn.execute("SELECT id FROM users WHERE username=?", (u,)).fetchone():
                 errors["username"] = "Tên đăng nhập đã tồn tại"
+            elif form.get("student_id") and conn.execute(
+                "SELECT id FROM users WHERE student_id=?",
+                (form.get("student_id"),),
+            ).fetchone():
+                errors["student_id"] = "Ma sinh vien da ton tai"
             else:
                 cy = form.get("course_year", "")
                 conn.execute(
@@ -660,6 +665,20 @@ def home():
         "SELECT listing_id FROM wishlist WHERE user_id=?", (session["user_id"],)
     ).fetchall()
     wishlist_ids = {r["listing_id"] for r in wl}
+    active_categories = conn.execute("""
+        SELECT root.*
+        FROM categories root
+        WHERE root.parent_id IS NULL
+          AND EXISTS (
+            SELECT 1
+            FROM listings l
+            JOIN books b ON b.id = l.book_id
+            LEFT JOIN categories child ON child.id = b.category_id
+            WHERE l.status='active'
+              AND (b.category_id = root.id OR child.parent_id = root.id)
+          )
+        ORDER BY root.sort_order
+    """).fetchall()
     conn.close()
 
     return render_template(
@@ -668,6 +687,7 @@ def home():
         popular=popular,
         stats=stats,
         wishlist_ids=wishlist_ids,
+        active_categories=active_categories,
     )
 
 
@@ -1396,6 +1416,53 @@ def submit_seller_review(user_id):
     conn.commit()
     conn.close()
     flash("Da gui danh gia cho nguoi ban.", "success")
+    return redirect(url_for("seller_profile", user_id=user_id))
+
+
+@app.route("/seller/<int:user_id>/report", methods=["POST"])
+@login_required
+def report_seller_profile(user_id):
+    conn = get_db_connection()
+    seller = conn.execute("SELECT id FROM users WHERE id=?", (user_id,)).fetchone()
+    if not seller:
+        conn.close()
+        flash("Khong tim thay nguoi ban.", "warning")
+        return redirect(url_for("listings"))
+    if user_id == session["user_id"]:
+        conn.close()
+        flash("Ban khong the tu report chinh minh.", "warning")
+        return redirect(url_for("seller_profile", user_id=user_id))
+
+    reason = request.form.get("reason", "").strip()
+    details = request.form.get("details", "").strip()
+    evidence_url = request.form.get("evidence_url", "").strip()
+    if reason not in REPORT_REASONS:
+        conn.close()
+        flash("Ly do report khong hop le.", "warning")
+        return redirect(url_for("seller_profile", user_id=user_id))
+
+    duplicate = conn.execute(
+        """
+        SELECT id FROM user_reports
+        WHERE reporter_id=? AND reported_user_id=? AND listing_id IS NULL AND status='pending'
+        """,
+        (session["user_id"], user_id),
+    ).fetchone()
+    if duplicate:
+        conn.close()
+        flash("Ban da gui report cho nguoi ban nay roi.", "info")
+        return redirect(url_for("seller_profile", user_id=user_id))
+
+    conn.execute(
+        """
+        INSERT INTO user_reports(reporter_id, reported_user_id, listing_id, reason, details, evidence_url)
+        VALUES (?, ?, NULL, ?, ?, ?)
+        """,
+        (session["user_id"], user_id, reason, details or None, evidence_url or None),
+    )
+    conn.commit()
+    conn.close()
+    flash("Da gui report toi admin.", "success")
     return redirect(url_for("seller_profile", user_id=user_id))
 
 

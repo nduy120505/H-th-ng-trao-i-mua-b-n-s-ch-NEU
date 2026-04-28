@@ -22,7 +22,7 @@
     </div>
   </div>
   <div class="category-strip">
-    {% for cat in root_categories %}
+    {% for cat in active_categories %}
       <a href="{{ url_for('listings') }}?cat={{ cat.id }}" class="category-chip">{{ cat.name }}</a>
     {% endfor %}
   </div>

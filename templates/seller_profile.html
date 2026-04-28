@@ -38,6 +38,23 @@
         {% if seller.faculty %}
           <div class="badge badge-blue" style="margin-bottom:8px">{{ seller.faculty }}</div>
         {% endif %}
+        {% if seller.id != session.get('user_id') %}
+          <button type="button" class="btn btn-outline btn-block" id="toggleSellerReportBox" style="margin:8px 0 12px">
+            Report người bán
+          </button>
+          <div class="report-box" id="sellerReportBox" hidden>
+            <form method="POST" action="{{ url_for('report_seller_profile', user_id=seller.id) }}">
+              <select name="reason" class="form-control" style="margin-bottom:8px">
+                {% for reason in REPORT_REASONS %}
+                  <option value="{{ reason }}">{{ reason }}</option>
+                {% endfor %}
+              </select>
+              <textarea name="details" class="form-control" rows="3" placeholder="Mô tả ngắn sự việc"></textarea>
+              <input type="url" name="evidence_url" class="form-control" style="margin-top:8px" placeholder="URL bằng chứng">
+              <button type="submit" class="btn btn-outline btn-block" style="margin-top:10px">Gửi report tới admin</button>
+            </form>
+          </div>
+        {% endif %}
         {% if seller.phone %}
           <div class="seller-phone-box seller-phone-box-compact">
             <div class="seller-phone-label">Số điện thoại</div>
@@ -158,4 +175,13 @@
     </div>
   </div>
 </div>
+<script>
+  const sellerReportBtn = document.getElementById('toggleSellerReportBox');
+  const sellerReportBox = document.getElementById('sellerReportBox');
+  sellerReportBtn?.addEventListener('click', () => {
+    if (!sellerReportBox) return;
+    if (sellerReportBox.hasAttribute('hidden')) sellerReportBox.removeAttribute('hidden');
+    else sellerReportBox.setAttribute('hidden', '');
+  });
+</script>
 {% endblock %}
