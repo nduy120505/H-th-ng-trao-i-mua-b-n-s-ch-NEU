@@ -21,11 +21,6 @@
       <div class="stat-label">Sách cho miễn phí</div>
     </div>
   </div>
-  <div class="category-strip">
-    {% for cat in active_categories %}
-      <a href="{{ url_for('listings') }}?cat={{ cat.id }}" class="category-chip">{{ cat.name }}</a>
-    {% endfor %}
-  </div>
   <div class="section-header">
     <div class="section-title">Mới đăng gần đây</div>
     <a href="{{ url_for('listings') }}" class="btn btn-outline btn-sm">Xem tất cả</a>

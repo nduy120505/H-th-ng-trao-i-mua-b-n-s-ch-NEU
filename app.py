@@ -665,20 +665,6 @@ def home():
         "SELECT listing_id FROM wishlist WHERE user_id=?", (session["user_id"],)
     ).fetchall()
     wishlist_ids = {r["listing_id"] for r in wl}
-    active_categories = conn.execute("""
-        SELECT root.*
-        FROM categories root
-        WHERE root.parent_id IS NULL
-          AND EXISTS (
-            SELECT 1
-            FROM listings l
-            JOIN books b ON b.id = l.book_id
-            LEFT JOIN categories child ON child.id = b.category_id
-            WHERE l.status='active'
-              AND (b.category_id = root.id OR child.parent_id = root.id)
-          )
-        ORDER BY root.sort_order
-    """).fetchall()
     conn.close()
 
     return render_template(
@@ -687,7 +673,6 @@ def home():
         popular=popular,
         stats=stats,
         wishlist_ids=wishlist_ids,
-        active_categories=active_categories,
     )
 
 
